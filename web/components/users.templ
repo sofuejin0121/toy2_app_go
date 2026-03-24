@@ -1,0 +1,103 @@
+package components
+
+import (
+	"fmt"
+
+	"github.com/<あなたのGitHubアカウント名>/toy_app/internal/model"
+)
+
+type UserPageData struct {
+	Title       string
+	Notice      string
+	User        model.User
+	Users       []model.User
+	Errors      []string
+	Action      string
+	SubmitLabel string
+}
+
+templ UserErrorMessages(errors []string) {
+	if len(errors) > 0 {
+		<div id="error_explanation">
+			<div>{ fmt.Sprintf("The form contains %d error(s).", len(errors)) }</div>
+			<ul>
+				for _, err := range errors {
+					<li>{ err }</li>
+				}
+			</ul>
+		</div>
+	}
+}
+
+templ UserIndex(data UserPageData) {
+	@Layout() {
+		<h1>{ data.Title }</h1>
+		if data.Notice != "" {
+			<p style="color: green">{ data.Notice }</p>
+		}
+		<div id="users">
+			for _, user := range data.Users {
+				<div>
+					<p>Name: { user.Name }</p>
+					<p>Email: { user.Email }</p>
+					<p>
+						<a href={ templ.SafeURL(fmt.Sprintf("/users/%d", user.ID)) }>Show this user</a>
+					</p>
+				</div>
+			}
+		</div>
+		<a href="/users/new">New user</a>
+	}
+}
+
+templ UserShow(data UserPageData) {
+	@Layout() {
+		<h1>User</h1>
+		if data.Notice != "" {
+			<p style="color: green">{ data.Notice }</p>
+		}
+		<p>Name: { data.User.Name }</p>
+		<p>Email: { data.User.Email }</p>
+		<p><a href={ templ.SafeURL(fmt.Sprintf("/users/%d/edit", data.User.ID)) }>Edit this user</a></p>
+		<form action={ templ.SafeURL(fmt.Sprintf("/users/%d", data.User.ID)) } method="post">
+			<input type="hidden" name="_method" value="DELETE"/>
+			<button type="submit">Destroy this user</button>
+		</form>
+		<p><a href="/users">Back to users</a></p>
+	}
+}
+
+templ UserForm(data UserPageData) {
+	@UserErrorMessages(data.Errors)
+	<form action={ templ.SafeURL(data.Action) } method="post">
+		if data.SubmitLabel == "Update User" {
+			<input type="hidden" name="_method" value="PATCH"/>
+		}
+		<div>
+			<label for="name">Name</label>
+			<input id="name" type="text" name="name" value={ data.User.Name }/>
+		</div>
+		<div>
+			<label for="email">Email</label>
+			<input id="email" type="email" name="email" value={ data.User.Email }/>
+		</div>
+		<button type="submit">{ data.SubmitLabel }</button>
+	</form>
+}
+
+templ UserNew(data UserPageData) {
+	@Layout() {
+		<h1>{ data.Title }</h1>
+		@UserForm(data)
+		<p><a href="/users">Back to users</a></p>
+	}
+}
+
+templ UserEdit(data UserPageData) {
+	@Layout() {
+		<h1>{ data.Title }</h1>
+		@UserForm(data)
+		<p><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.User.ID)) }>Show this user</a></p>
+		<p><a href="/users">Back to users</a></p>
+	}
+}

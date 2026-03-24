@@ -1,0 +1,113 @@
+package components
+
+import (
+	"fmt"
+
+	"github.com/sofuejin0121/toy_app_go/internal/model"
+)
+
+type MicropostPageData struct {
+	Title       string
+	Notice      string
+	Micropost   model.Micropost
+	Microposts  []model.Micropost
+	Users       []model.User
+	Errors      []string
+	Action      string
+	SubmitLabel string
+}
+
+templ MicropostErrorMessages(errors []string) {
+	if len(errors) > 0 {
+		<div id="error_explanation">
+			<div>{ fmt.Sprintf("The form contains %d error(s).", len(errors)) }</div>
+			<ul>
+				for _, err := range errors {
+					<li>{ err }</li>
+				}
+			</ul>
+		</div>
+	}
+}
+
+templ MicropostIndex(data MicropostPageData) {
+	@Layout() {
+		<h1>{ data.Title }</h1>
+		if data.Notice != "" {
+			<p style="color: green">{ data.Notice }</p>
+		}
+		<div id="microposts">
+			for _, micropost := range data.Microposts {
+				<div>
+					<p>Content: { micropost.Content }</p>
+					<p>User ID: { fmt.Sprint(micropost.UserID) }</p>
+					<p>
+						<a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d", micropost.ID)) }>Show this micropost</a>
+					</p>
+				</div>
+			}
+		</div>
+		<a href="/microposts/new">New micropost</a>
+	}
+}
+
+templ MicropostShow(data MicropostPageData) {
+	@Layout() {
+		<h1>Micropost</h1>
+		if data.Notice != "" {
+			<p style="color: green">{ data.Notice }</p>
+		}
+		<p>Content: { data.Micropost.Content }</p>
+		<p>User ID: { fmt.Sprint(data.Micropost.UserID) }</p>
+		<p><a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d/edit", data.Micropost.ID)) }>Edit this micropost</a></p>
+		<form action={ templ.SafeURL(fmt.Sprintf("/microposts/%d", data.Micropost.ID)) } method="post">
+			<input type="hidden" name="_method" value="DELETE"/>
+			<button type="submit">Destroy this micropost</button>
+		</form>
+		<p><a href="/microposts">Back to microposts</a></p>
+	}
+}
+
+templ MicropostForm(data MicropostPageData) {
+	@MicropostErrorMessages(data.Errors)
+	<form action={ templ.SafeURL(data.Action) } method="post">
+		if data.SubmitLabel == "Update Micropost" {
+			<input type="hidden" name="_method" value="PATCH"/>
+		}
+		<div>
+			<label for="content">Content</label>
+			<textarea id="content" name="content">{ data.Micropost.Content }</textarea>
+		</div>
+		<div>
+			<label for="user_id">User</label>
+			<select id="user_id" name="user_id">
+				<option value="">Select a user</option>
+				for _, user := range data.Users {
+					if user.ID == data.Micropost.UserID {
+						<option value={ fmt.Sprint(user.ID) } selected>{ user.Name }</option>
+					} else {
+						<option value={ fmt.Sprint(user.ID) }>{ user.Name }</option>
+					}
+				}
+			</select>
+		</div>
+		<button type="submit">{ data.SubmitLabel }</button>
+	</form>
+}
+
+templ MicropostNew(data MicropostPageData) {
+	@Layout() {
+		<h1>{ data.Title }</h1>
+		@MicropostForm(data)
+		<p><a href="/microposts">Back to microposts</a></p>
+	}
+}
+
+templ MicropostEdit(data MicropostPageData) {
+	@Layout() {
+		<h1>{ data.Title }</h1>
+		@MicropostForm(data)
+		<p><a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d", data.Micropost.ID)) }>Show this micropost</a></p>
+		<p><a href="/microposts">Back to microposts</a></p>
+	}
+}
