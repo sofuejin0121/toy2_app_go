@@ -1,23 +1,40 @@
 package components
 
-templ Layout() {
+// fullTitle はページタイトルを整形します。
+func fullTitle(title string) string {
+	if title == "" {
+		return "Go Tutorial Sample App"
+	}
+	return title + " | Go Tutorial Sample App"
+}
+
+// Layout はページ全体の共通レイアウトコンポーネントです。
+templ Layout(title string) {
 	<!DOCTYPE html>
-	<html lang="ja">
+	<html>
 		<head>
+			<title>{ fullTitle(title) }</title>
+			<meta name="viewport" content="width=device-width,initial-scale=1"/>
 			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>Toy App</title>
+			<link rel="stylesheet" href="/static/css/application.css"/>
+			<style>
+				body { font-family: sans-serif; margin: 20px; }
+				a { color: #0066cc; }
+				.notice { color: green; }
+				.errors { color: red; }
+				.errors ul { margin: 5px 0; }
+				form div { margin-bottom: 10px; }
+				label { display: block; font-weight: bold; margin-bottom: 3px; }
+				input[type="text"], input[type="email"], textarea {
+					width: 300px; padding: 5px;
+				}
+				textarea { height: 80px; }
+				input[type="submit"] { padding: 8px 16px; cursor: pointer; }
+				hr { margin: 20px 0; border: none; border-top: 1px solid #ccc; }
+			</style>
 		</head>
 		<body>
-			<nav>
-				<a href="/">Home</a>
-				<a href="/users">Users</a>
-				<a href="/microposts">Microposts</a>
-			</nav>
-			<main>
-				{ children... }
-			</main>
-			@Footer()
+			{ children... }
 		</body>
 	</html>
 }

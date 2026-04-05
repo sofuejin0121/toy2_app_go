@@ -31,7 +31,7 @@ templ MicropostErrorMessages(errors []string) {
 }
 
 templ MicropostIndex(data MicropostPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>{ data.Title }</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -52,7 +52,7 @@ templ MicropostIndex(data MicropostPageData) {
 }
 
 templ MicropostShow(data MicropostPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>Micropost</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -96,7 +96,7 @@ templ MicropostForm(data MicropostPageData) {
 }
 
 templ MicropostNew(data MicropostPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>{ data.Title }</h1>
 		@MicropostForm(data)
 		<p><a href="/microposts">Back to microposts</a></p>
@@ -104,7 +104,7 @@ templ MicropostNew(data MicropostPageData) {
 }
 
 templ MicropostEdit(data MicropostPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>{ data.Title }</h1>
 		@MicropostForm(data)
 		<p><a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d", data.Micropost.ID)) }>Show this micropost</a></p>

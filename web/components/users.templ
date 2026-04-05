@@ -3,7 +3,7 @@ package components
 import (
 	"fmt"
 
-	"github.com/<あなたのGitHubアカウント名>/toy_app/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/model"
 )
 
 type UserPageData struct {
@@ -30,7 +30,7 @@ templ UserErrorMessages(errors []string) {
 }
 
 templ UserIndex(data UserPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>{ data.Title }</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -51,7 +51,7 @@ templ UserIndex(data UserPageData) {
 }
 
 templ UserShow(data UserPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>User</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -86,7 +86,7 @@ templ UserForm(data UserPageData) {
 }
 
 templ UserNew(data UserPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>{ data.Title }</h1>
 		@UserForm(data)
 		<p><a href="/users">Back to users</a></p>
@@ -94,7 +94,7 @@ templ UserNew(data UserPageData) {
 }
 
 templ UserEdit(data UserPageData) {
-	@Layout() {
+	@Layout(data.Title) {
 		<h1>{ data.Title }</h1>
 		@UserForm(data)
 		<p><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.User.ID)) }>Show this user</a></p>

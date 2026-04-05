@@ -2,10 +2,12 @@ module github.com/sofuejin0121/toy_app_go
 
 go 1.25.0
 
-require modernc.org/sqlite v1.47.0
+require (
+	github.com/a-h/templ v0.3.1001
+	modernc.org/sqlite v1.47.0
+)
 
 require (
-	github.com/a-h/templ v0.3.1001 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

@@ -1,0 +1,42 @@
+package components
+
+// HomePage はHomeページのコンポーネントです。
+templ HomePage() {
+	@Layout("Home") {
+		<h1>Sample App</h1>
+		<p>
+			This is the home page for the
+			<a href="https://gotutorial.jp/">Go Tutorial</a>
+			sample application.
+		</p>
+	}
+}
+
+// HelpPage はHelpページのコンポーネントです。
+templ HelpPage() {
+	@Layout("Help") {
+		<h1>Help</h1>
+		<p>
+			Get help on the Go Tutorial at the
+			<a href="https://gotutorial.jp/help">Go Tutorial Help page</a>.
+			To get help on this sample app, see the
+			<a href="https://gotutorial.jp/#ebook"><em>Go Tutorial</em>
+			book</a>.
+		</p>
+	}
+}
+
+// AboutPage はAboutページのコンポーネントです。
+templ AboutPage() {
+	@Layout("About") {
+		<h1>About</h1>
+		<p>
+			<a href="https://gotutorial.jp/">Go Tutorial</a>
+			is a <a href="https://gotutorial.jp/#ebook">book</a> and
+			<a href="https://gotutorial.jp/screencast">screencast</a>
+			to teach web development with
+			<a href="https://go.dev/">Go</a>.
+			This is the sample application for the tutorial.
+		</p>
+	}
+}

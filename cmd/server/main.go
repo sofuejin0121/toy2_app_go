@@ -25,6 +25,9 @@ func main() {
 	userHandler := handler.NewUserHandler(s)
 	micropostHandler := handler.NewMicropostHandler(s)
 
+	// StaticPagesハンドラーを作成
+	staticHandler := handler.NewStaticHandler()
+
 	mux := http.NewServeMux()
 
 	// Micropostsリソース
@@ -45,11 +48,16 @@ func main() {
 	mux.HandleFunc("PATCH /users/{id}", userHandler.Update)
 	mux.HandleFunc("DELETE /users/{id}", userHandler.Destroy)
 
-	// ルートURLをユーザー一覧に変更
-	mux.HandleFunc("GET /", userHandler.Index)
+	// StaticPages用ルーティング
+	mux.HandleFunc("GET /static_pages/home", staticHandler.Home)
+	mux.HandleFunc("GET /static_pages/help", staticHandler.Help)
+	mux.HandleFunc("GET /static_pages/about", staticHandler.About)
 
-	handler := middleware.MethodOverride(mux)
+	// ルートURL
+	mux.HandleFunc("GET /{$}", staticHandler.Home)
+
+	h := middleware.MethodOverride(mux)
 
 	log.Printf("Starting server on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, handler))
+	log.Fatal(http.ListenAndServe(":"+port, h))
 }
