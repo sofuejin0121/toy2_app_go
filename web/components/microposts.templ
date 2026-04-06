@@ -15,6 +15,12 @@ type MicropostPageData struct {
 	Errors      []string
 	Action      string
 	SubmitLabel string
+	Flash 		map[string]string
+	LoggedIn 	bool
+	CurrentUser *model.User
+	CSRFToken 	string
+	Debug 		bool
+	DebugInfo 	string
 }
 
 templ MicropostErrorMessages(errors []string) {
@@ -31,7 +37,7 @@ templ MicropostErrorMessages(errors []string) {
 }
 
 templ MicropostIndex(data MicropostPageData) {
-	@Layout(data.Title) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>{ data.Title }</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -52,7 +58,7 @@ templ MicropostIndex(data MicropostPageData) {
 }
 
 templ MicropostShow(data MicropostPageData) {
-	@Layout(data.Title) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>Micropost</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -96,15 +102,14 @@ templ MicropostForm(data MicropostPageData) {
 }
 
 templ MicropostNew(data MicropostPageData) {
-	@Layout(data.Title) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>{ data.Title }</h1>
 		@MicropostForm(data)
 		<p><a href="/microposts">Back to microposts</a></p>
 	}
 }
-
 templ MicropostEdit(data MicropostPageData) {
-	@Layout(data.Title) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>{ data.Title }</h1>
 		@MicropostForm(data)
 		<p><a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d", data.Micropost.ID)) }>Show this micropost</a></p>

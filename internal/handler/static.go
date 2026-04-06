@@ -16,7 +16,10 @@ func NewStaticHandler() *StaticHandler {
 
 // Home はHomeページを表示します。
 func (h *StaticHandler) Home(w http.ResponseWriter, r *http.Request) {
-	_ = components.HomePage().Render(r.Context(), w)
+	data := components.StaticPageData{
+		Title: "Home",
+	}
+	_ = components.StaticHome(data).Render(r.Context(), w)
 }
 
 // Help はHelpページを表示します。
@@ -27,4 +30,16 @@ func (h *StaticHandler) Help(w http.ResponseWriter, r *http.Request) {
 // About はAboutページを表示します。
 func (h *StaticHandler) About(w http.ResponseWriter, r *http.Request) {
 	_ = components.AboutPage().Render(r.Context(), w)
+}
+
+// Cotact はContactページを表示します。
+func (h *StaticHandler) Contact(w http.ResponseWriter, r *http.Request) {
+	data := components.StaticPageData{
+		Title: "Contact",
+		Flash: getFlash(r),
+		LoggedIn: isLoggedIn(r),
+		CurrentUser: currentUser(r),
+		CSRFToken: "",
+	}
+	_ = components.StaticContact(data).Render(r.Context(), w)
 }

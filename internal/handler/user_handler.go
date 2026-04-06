@@ -72,9 +72,13 @@ func (h *UserHandler) Show(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) New(w http.ResponseWriter, r *http.Request) {
 	data := components.UserPageData{
-		Title:       "New user",
+		Title:       "Sign up",
 		Action:      "/users",
-		SubmitLabel: "Create User",
+		SubmitLabel: "Create my account",
+		Flash:       getFlash(r),
+		LoggedIn:    isLoggedIn(r),
+		CurrentUser: currentUser(r),
+		CSRFToken:   "",
 	}
 	_ = components.UserNew(data).Render(r.Context(), w)
 }
@@ -112,22 +116,22 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	if errors := user.Validate(); len(errors) > 0 {
 		data := components.UserPageData{
-			Title:       "New user",
+			Title:       "Sign up",
 			User:        user,
 			Errors:      errors,
 			Action:      "/users",
-			SubmitLabel: "Create User",
+			SubmitLabel: "Create my account",
 		}
 		_ = components.UserNew(data).Render(r.Context(), w)
 		return
 	}
 	if err := h.store.CreateUser(&user); err != nil {
 		data := components.UserPageData{
-			Title:       "New user",
+			Title:       "Sign up",
 			User:        user,
 			Errors:      []string{err.Error()},
 			Action:      "/users",
-			SubmitLabel: "Create User",
+			SubmitLabel: "Create my account",
 		}
 		_ = components.UserNew(data).Render(r.Context(), w)
 		return

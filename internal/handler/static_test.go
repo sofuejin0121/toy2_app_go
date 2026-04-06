@@ -25,7 +25,7 @@ func TestStaticPagesHome(t *testing.T) {
 		t.Errorf("Home: expected status %d, got %d", http.StatusOK, rec.Code)
 	}
 
-	expected := "<title>Home | " + baseTitle + "</title>"
+	expected := "<title>" + baseTitle + "</title>"
 	if !strings.Contains(rec.Body.String(), expected) {
 		t.Errorf("Home: expected title %q in body", expected)
 	}

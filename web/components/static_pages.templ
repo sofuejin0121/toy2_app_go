@@ -1,20 +1,54 @@
 package components
 
+import (
+	"github.com/sofuejin0121/toy_app_go/internal/model"
+)
+// StaticPageData は静的ページに共通のテンプレートデータです。
+type StaticPageData struct {
+	Title       string
+	Flash       map[string]string
+	LoggedIn    bool
+	CurrentUser *model.User
+	CSRFToken   string
+	Debug       bool
+	DebugInfo   string
+}
+
 // HomePage はHomeページのコンポーネントです。
 templ HomePage() {
-	@Layout("Home") {
-		<h1>Sample App</h1>
-		<p>
-			This is the home page for the
-			<a href="https://gotutorial.jp/">Go Tutorial</a>
-			sample application.
-		</p>
+	@StaticHome(StaticPageData{})
+}
+
+// StaticHome はHomeページのコンポーネントです。
+templ StaticHome(data StaticPageData) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+		if data.LoggedIn && data.CurrentUser != nil {
+			// 第13章以降のログイン済みHome表示はそのまま残します。
+		} else {
+			<div class="center jumbotron">
+				<h1>Welcome to the Sample App</h1>
+				<h2>
+					This is the home page for the
+					<a href="https://gotutorial.jp/">Go Tutorial</a>
+					sample application.
+				</h2>
+				<a href="/signup" class="btn btn-lg btn-primary">Sign up now!</a>
+			</div>
+			<a href="https://go.dev/">
+				<img src="/static/images/go.svg" alt="Go logo" width="200"/>
+			</a>
+		}
 	}
 }
 
 // HelpPage はHelpページのコンポーネントです。
 templ HelpPage() {
-	@Layout("Help") {
+	@StaticHelp(StaticPageData{Title: "Help"})
+}
+
+// StaticHelp はHelpページのコンポーネントです。
+templ StaticHelp(data StaticPageData) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>Help</h1>
 		<p>
 			Get help on the Go Tutorial at the
@@ -28,7 +62,12 @@ templ HelpPage() {
 
 // AboutPage はAboutページのコンポーネントです。
 templ AboutPage() {
-	@Layout("About") {
+	@StaticAbout(StaticPageData{Title: "About"})
+}
+
+// StaticAbout はAboutページのコンポーネントです。
+templ StaticAbout(data StaticPageData) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>About</h1>
 		<p>
 			<a href="https://gotutorial.jp/">Go Tutorial</a>
@@ -38,5 +77,18 @@ templ AboutPage() {
 			<a href="https://go.dev/">Go</a>.
 			This is the sample application for the tutorial.
 		</p>
+	}
+}
+
+// ContactPage はContactページのコンポーネントです。
+templ ContactPage() {
+	@StaticContact(StaticPageData{Title: "Contact"})
+}
+
+// StaticContact はContactページのコンポーネントです。
+templ StaticContact(data StaticPageData) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+		<h1>Contact</h1>
+		<p>Contact the <a href="https://gotutorial.jp/">Go Tutorial</a> support team.</p>
 	}
 }

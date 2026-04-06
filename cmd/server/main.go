@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+
 	"github.com/sofuejin0121/toy_app_go/internal/handler"
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
 	"github.com/sofuejin0121/toy_app_go/internal/store"
@@ -49,12 +50,17 @@ func main() {
 	mux.HandleFunc("DELETE /users/{id}", userHandler.Destroy)
 
 	// StaticPages用ルーティング
-	mux.HandleFunc("GET /static_pages/home", staticHandler.Home)
-	mux.HandleFunc("GET /static_pages/help", staticHandler.Help)
-	mux.HandleFunc("GET /static_pages/about", staticHandler.About)
-
-	// ルートURL
 	mux.HandleFunc("GET /{$}", staticHandler.Home)
+	mux.HandleFunc("GET /help", staticHandler.Help)
+	mux.HandleFunc("GET /about", staticHandler.About)
+	mux.HandleFunc("GET /contact", staticHandler.Contact)
+
+	// Users用ルーティング
+	mux.HandleFunc("GET /signup", userHandler.New)
+
+	fs := http.FileServer(http.Dir("web/static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+
 
 	h := middleware.MethodOverride(mux)
 

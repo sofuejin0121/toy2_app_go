@@ -14,6 +14,12 @@ type UserPageData struct {
 	Errors      []string
 	Action      string
 	SubmitLabel string
+	Flash       map[string]string
+	LoggedIn    bool
+	CurrentUser *model.User
+	CSRFToken   string
+	Debug       bool
+	DebugInfo   string
 }
 
 templ UserErrorMessages(errors []string) {
@@ -30,7 +36,7 @@ templ UserErrorMessages(errors []string) {
 }
 
 templ UserIndex(data UserPageData) {
-	@Layout(data.Title) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>{ data.Title }</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -51,7 +57,7 @@ templ UserIndex(data UserPageData) {
 }
 
 templ UserShow(data UserPageData) {
-	@Layout(data.Title) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>User</h1>
 		if data.Notice != "" {
 			<p style="color: green">{ data.Notice }</p>
@@ -73,28 +79,40 @@ templ UserForm(data UserPageData) {
 		if data.SubmitLabel == "Update User" {
 			<input type="hidden" name="_method" value="PATCH"/>
 		}
-		<div>
+		<div class="form-group">
 			<label for="name">Name</label>
-			<input id="name" type="text" name="name" value={ data.User.Name }/>
+			<input id="name" class="form-control" type="text" name="name" value={ data.User.Name }/>
 		</div>
-		<div>
+		<div class="form-group">
 			<label for="email">Email</label>
-			<input id="email" type="email" name="email" value={ data.User.Email }/>
+			<input id="email" class="form-control" type="email" name="email" value={ data.User.Email }/>
 		</div>
-		<button type="submit">{ data.SubmitLabel }</button>
+		<div class="form-group">
+			<label for="password">Password</label>
+			<input id="password" class="form-control" type="password" name="password"/>
+		</div>
+		<div class="form-group">
+			<label for="password_confirmation">Confirmation</label>
+			<input id="password_confirmation" class="form-control" type="password" name="password_confirmation"/>
+		</div>
+		<button type="submit" class="btn btn-primary btn-lg btn-block">{ data.SubmitLabel }</button>
 	</form>
 }
 
+// UserNew はユーザー登録ページのコンポーネントです。
 templ UserNew(data UserPageData) {
-	@Layout(data.Title) {
-		<h1>{ data.Title }</h1>
-		@UserForm(data)
-		<p><a href="/users">Back to users</a></p>
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+		<h1>Sign up</h1>
+		<div class="row">
+			<div class="col-md-6 col-md-offset-3">
+				@UserForm(data)
+			</div>
+		</div>
 	}
 }
 
 templ UserEdit(data UserPageData) {
-	@Layout(data.Title) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<h1>{ data.Title }</h1>
 		@UserForm(data)
 		<p><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.User.ID)) }>Show this user</a></p>
