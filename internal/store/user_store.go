@@ -15,7 +15,7 @@ func scanUser(scanner userScanner) (model.User, error) {
 	var user model.User
 	var createdAt string
 	var updatedAt string
-	if err := scanner.Scan(&user.ID, &user.Name, &user.Email, &createdAt, &updatedAt); err != nil {
+	if err := scanner.Scan(&user.ID, &user.Name, &user.Email, &user.PasswordDigest, &createdAt, &updatedAt); err != nil {
 		return model.User{}, err
 	}
 	user.CreatedAt = parseTime(createdAt)
@@ -62,7 +62,9 @@ func (s *Store) GetUser(id int64) (*model.User, error) {
 	}
 	return &user, nil
 }
+
 // GetMicropostsByUserID は指定ユーザーのマイクロポスト一覧を返します。
+// 1人のユーザーは複数のマイクロポストを持つことができます（has many）。
 func (s *Store) GetMicropostsByUserID(userID int64) ([]model.Micropost, error) {
 	rows, err := s.db.Query(
 		"SELECT id, content, user_id, created_at, updated_at FROM microposts WHERE user_id = ? ORDER BY id",
@@ -99,6 +101,7 @@ func (s *Store) FindUserByEmail(email string) (*model.User, error) {
 	}
 	return &user, nil
 }
+
 // CreateUser は新しいユーザーをデータベースに作成する
 // UniQue制約違反の場合はユーザーフレンドリーなエラーを返す
 func (s *Store) CreateUser(u *model.User) error {
@@ -199,4 +202,3 @@ func (s *Store) DeleteUser(id int64) error {
 	}
 	return nil
 }
-

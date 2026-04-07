@@ -41,13 +41,13 @@ func main() {
 	mux.HandleFunc("DELETE /microposts/{id}", micropostHandler.Destroy)
 
 	// Usersリソース
-	mux.HandleFunc("GET /users", userHandler.Index)
-	mux.HandleFunc("GET /users/new", userHandler.New)
-	mux.HandleFunc("GET /users/{id}", userHandler.Show)
-	mux.HandleFunc("GET /users/{id}/edit", userHandler.Edit)
-	mux.HandleFunc("POST /users", userHandler.Create)
-	mux.HandleFunc("PATCH /users/{id}", userHandler.Update)
-	mux.HandleFunc("DELETE /users/{id}", userHandler.Destroy)
+	mux.HandleFunc("GET /users", userHandler.Index) // ユーザー一覧ページ
+	mux.HandleFunc("GET /users/new", userHandler.New) // ユーザー新規作成するページ
+	mux.HandleFunc("GET /users/{id}", userHandler.Show) // 特定のユーザーを表示するページ
+	mux.HandleFunc("GET /users/{id}/edit", userHandler.Edit) // 特定のユーザーを編集するページ
+	mux.HandleFunc("POST /users", userHandler.Create) // ユーザーを作成する
+	mux.HandleFunc("PATCH /users/{id}", userHandler.Update) // 特定のユーザーを更新する
+	mux.HandleFunc("DELETE /users/{id}", userHandler.Destroy) // 特定のユーザーを削除する
 
 	// StaticPages用ルーティング
 	mux.HandleFunc("GET /{$}", staticHandler.Home)

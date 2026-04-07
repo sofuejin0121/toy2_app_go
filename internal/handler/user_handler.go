@@ -63,10 +63,15 @@ func (h *UserHandler) Show(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := components.UserPageData{
-		Title:  "User",
-		Notice: noticeFromRequest(r),
-		User:   *user,
+		Title:       user.Name,
+		Flash:       getFlash(r),
+		LoggedIn:    isLoggedIn(r),
+		CurrentUser: currentUser(r),
+		CSRFToken:   "", // CSRFトークンは未実装
+		// Notice: noticeFromRequest(r),
+		User: *user,
 	}
+	h.setDebugInfo(&data, r)
 	_ = components.UserShow(data).Render(r.Context(), w)
 }
 
@@ -111,33 +116,52 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := model.User{
-		Name:  r.FormValue("name"),
-		Email: r.FormValue("email"),
+		Name:                 r.FormValue("name"),
+		Email:                r.FormValue("email"),
+		Password:             r.FormValue("password"),
+		PasswordConfirmation: r.FormValue("password_confirmation"),
 	}
 	if errors := user.Validate(); len(errors) > 0 {
 		data := components.UserPageData{
 			Title:       "Sign up",
+			Flash:       getFlash(r),
+			LoggedIn:    isLoggedIn(r),
+			CurrentUser: currentUser(r),
+			CSRFToken:   "",
 			User:        user,
 			Errors:      errors,
 			Action:      "/users",
 			SubmitLabel: "Create my account",
 		}
+		h.setDebugInfo(&data, r)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		_ = components.UserNew(data).Render(r.Context(), w)
+		return
+	}
+	// パスワードのハッシュ化と保存
+	if err := user.SetPassword(user.Password); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	if err := h.store.CreateUser(&user); err != nil {
 		data := components.UserPageData{
 			Title:       "Sign up",
+			Flash:       getFlash(r),
+			LoggedIn:    isLoggedIn(r),
+			CurrentUser: currentUser(r),
+			CSRFToken:   "",
 			User:        user,
 			Errors:      []string{err.Error()},
 			Action:      "/users",
 			SubmitLabel: "Create my account",
 		}
+		h.setDebugInfo(&data, r)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		_ = components.UserNew(data).Render(r.Context(), w)
 		return
 	}
-
-	redirectWithNotice(w, r, fmt.Sprintf("/users/%d", user.ID), "User was successfully created.")
+	setFlash(w, "success", "Welcome to the Sample App!")
+	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
 }
 
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {

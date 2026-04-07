@@ -22,18 +22,27 @@ templ Header(loggedIn bool, currentUser *model.User, csrfToken string) {
 				<ul class="nav navbar-nav navbar-right">
 					<li><a href="/">Home</a></li>
 					<li><a href="/help">Help</a></li>
-					if loggedIn && currentUser != nil {
-						<li><a href="/users">Users</a></li>
-						<li><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", currentUser.ID)) }>Account</a></li>
-						<li>
-							<form action="/logout" method="POST" style="display:inline">
-								<input type="hidden" name="csrf_token" value={ csrfToken} />
-								<button type="submit" class="nav-link-button">Log out</button>
-							</form>
-						</li>
-					} else {
-						<li><a href="/login">Log in</a></li>
-					}
+				if loggedIn && currentUser != nil {
+					<li><a href="/users">Users</a></li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+							Account <b class="caret"></b>
+						</a>
+						<ul class="dropdown-menu">
+							<li><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", currentUser.ID)) }>Profile</a></li>
+							<li><a href={ templ.SafeURL(fmt.Sprintf("/users/%d/edit", currentUser.ID)) }>Settings</a></li>
+							<li class="divider"></li>
+							<li>
+								<form action="/logout" method="POST">
+									<input type="hidden" name="csrf_token" value={ csrfToken }/>
+									<button type="submit" class="nav-link-button">Log out</button>
+								</form>
+							</li>
+						</ul>
+					</li>
+				} else {
+					<li><a href="/login">Log in</a></li>
+				}
 				</ul>
 			</nav>
 		</div>
@@ -67,6 +76,8 @@ templ Layout(title string, flash map[string]string, loggedIn bool, currentUser *
 				}
 				@Footer()
 			</div>
+		<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"></script>
 		</body>
 	</html>
 }
