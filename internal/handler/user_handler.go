@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/sofuejin0121/toy_app_go/internal/middleware"
 	"github.com/sofuejin0121/toy_app_go/internal/model"
 	"github.com/sofuejin0121/toy_app_go/internal/store"
 	"github.com/sofuejin0121/toy_app_go/web/components"
@@ -67,7 +68,7 @@ func (h *UserHandler) Show(w http.ResponseWriter, r *http.Request) {
 		Flash:       getFlash(r),
 		LoggedIn:    isLoggedIn(r),
 		CurrentUser: currentUser(r),
-		CSRFToken:   "", // CSRFトークンは未実装
+		CSRFToken:   middleware.CSRFTokenFromContext(r),
 		// Notice: noticeFromRequest(r),
 		User: *user,
 	}
@@ -83,7 +84,7 @@ func (h *UserHandler) New(w http.ResponseWriter, r *http.Request) {
 		Flash:       getFlash(r),
 		LoggedIn:    isLoggedIn(r),
 		CurrentUser: currentUser(r),
-		CSRFToken:   "",
+		CSRFToken:   middleware.CSRFTokenFromContext(r),
 	}
 	_ = components.UserNew(data).Render(r.Context(), w)
 }
@@ -105,6 +106,7 @@ func (h *UserHandler) Edit(w http.ResponseWriter, r *http.Request) {
 		User:        *user,
 		Action:      fmt.Sprintf("/users/%d", user.ID),
 		SubmitLabel: "Update User",
+		CSRFToken:   middleware.CSRFTokenFromContext(r),
 	}
 	_ = components.UserEdit(data).Render(r.Context(), w)
 }
@@ -121,13 +123,13 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Password:             r.FormValue("password"),
 		PasswordConfirmation: r.FormValue("password_confirmation"),
 	}
-	if errors := user.Validate(); len(errors) > 0 {
+		if errors := user.Validate(); len(errors) > 0 {
 		data := components.UserPageData{
 			Title:       "Sign up",
 			Flash:       getFlash(r),
 			LoggedIn:    isLoggedIn(r),
 			CurrentUser: currentUser(r),
-			CSRFToken:   "",
+			CSRFToken:   middleware.CSRFTokenFromContext(r),
 			User:        user,
 			Errors:      errors,
 			Action:      "/users",
@@ -149,7 +151,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 			Flash:       getFlash(r),
 			LoggedIn:    isLoggedIn(r),
 			CurrentUser: currentUser(r),
-			CSRFToken:   "",
+			CSRFToken:   middleware.CSRFTokenFromContext(r),
 			User:        user,
 			Errors:      []string{err.Error()},
 			Action:      "/users",
@@ -160,6 +162,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		_ = components.UserNew(data).Render(r.Context(), w)
 		return
 	}
+	logIn(w, r, user.ID)
 	setFlash(w, "success", "Welcome to the Sample App!")
 	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
 }
@@ -190,6 +193,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 			Errors:      errors,
 			Action:      fmt.Sprintf("/users/%d", user.ID),
 			SubmitLabel: "Update User",
+			CSRFToken:   middleware.CSRFTokenFromContext(r),
 		}
 		_ = components.UserEdit(data).Render(r.Context(), w)
 		return
@@ -201,6 +205,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 			Errors:      []string{err.Error()},
 			Action:      fmt.Sprintf("/users/%d", user.ID),
 			SubmitLabel: "Update User",
+			CSRFToken:   middleware.CSRFTokenFromContext(r),
 		}
 		_ = components.UserEdit(data).Render(r.Context(), w)
 		return

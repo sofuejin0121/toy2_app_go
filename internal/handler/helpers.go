@@ -9,6 +9,7 @@ import (
 
 	"github.com/sofuejin0121/toy_app_go/internal/model"
 	"github.com/sofuejin0121/toy_app_go/web/components"
+	"github.com/sofuejin0121/toy_app_go/internal/middleware"
 )
 
 // getFlash はリクエストコンテキストからフラッシュメッセージを取得する
@@ -52,12 +53,17 @@ func setFlash(w http.ResponseWriter, kind, message string) {
 
 // isLoggedIn はユーザーがログイン中かどうかを返す
 func isLoggedIn(r *http.Request) bool {
-	return false
+	return currentUser(r) != nil
 }
 
 // currentUser はリクエストコンテキストからログイン中のユーザーを返す
 func currentUser(r *http.Request) *model.User {
-	return nil
+	return middleware.CurrentUser(r)
+}
+
+// loggedIn は次章との互換性のために残しておくエイリアス
+func loggedIn(r *http.Request) bool {
+	return isLoggedIn(r)
 }
 
 // setDebugInfo はデバッグ情報をページデータにセットします。

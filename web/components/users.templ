@@ -46,6 +46,7 @@ templ UserErrorMessages(errors []string) {
 templ UserForm(data UserPageData) {
 	@UserErrorMessages(data.Errors)
 	<form action={ templ.SafeURL(data.Action) } method="post">
+		<input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
 		if data.SubmitLabel == "Update User" {
 			<input type="hidden" name="_method" value="PATCH"/>
 		}

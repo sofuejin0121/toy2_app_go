@@ -24,6 +24,7 @@ func main() {
 	defer s.Close()
 
 	userHandler := handler.NewUserHandler(s)
+	sessionHandler := handler.NewSessionHandler(s)
 	micropostHandler := handler.NewMicropostHandler(s)
 
 	// StaticPagesハンドラーを作成
@@ -54,16 +55,23 @@ func main() {
 	mux.HandleFunc("GET /help", staticHandler.Help)
 	mux.HandleFunc("GET /about", staticHandler.About)
 	mux.HandleFunc("GET /contact", staticHandler.Contact)
+	mux.HandleFunc("GET /signup", userHandler.New)
+
+	// セッション
+	mux.HandleFunc("GET /login", sessionHandler.New)
+	mux.HandleFunc("POST /login", sessionHandler.Create)
+	mux.HandleFunc("DELETE /logout", sessionHandler.Destroy)
 
 	// Users用ルーティング
-	mux.HandleFunc("GET /signup", userHandler.New)
 
 	fs := http.FileServer(http.Dir("web/static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
-
-	h := middleware.MethodOverride(mux)
-
+	// ミドルウェアチェーン　Auth → MethodOverride →　ServeMux
+	h := middleware.Auth(s)(
+		middleware.MethodOverride(mux),
+	)
+	
 	log.Printf("Starting server on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, h))
 }

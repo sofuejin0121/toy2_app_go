@@ -1,0 +1,51 @@
+package components
+
+import (
+    "fmt"
+    "github.com/sofuejin0121/toy_app_go/internal/model"
+)
+// Header はサイト共通のナビゲーションヘッダーコンポーネントです。
+templ Header(loggedIn bool, currentUser *model.User, csrfToken string) {
+    <header class="navbar navbar-fixed-top navbar-inverse">
+        <div class="container">
+            <a href="/" id="logo">sample app</a>
+            <nav>
+                <div class="navbar-header">
+                    <button id="hamburger" type="button" class="navbar-toggle collapsed">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <ul id="navbar-menu"
+                    class="nav navbar-nav navbar-right collapse navbar-collapse">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/help">Help</a></li>
+                    if loggedIn {
+                        <li><a href="#">Users</a></li>
+                        <li class="dropdown">
+                            <a href="#" id="account" class="dropdown-toggle">
+                                Account <b class="caret"></b>
+                            </a>
+                            <ul id="dropdown-menu" class="dropdown-menu">
+                                <li><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", currentUser.ID)) }>Profile</a></li>
+                                <li><a href="#">Settings</a></li>
+                                <li class="divider"></li>
+                                <li>
+                                    <form action="/logout" method="post" style="display:inline;">
+                                        <input type="hidden" name="csrf_token"
+                                               value={ csrfToken }/>
+                                        <button type="submit" class="logout-link">Log out</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    } else {
+                        <li><a href="/login">Log in</a></li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    </header>
+}
