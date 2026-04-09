@@ -22,20 +22,20 @@ templ Header(loggedIn bool, currentUser *model.User, csrfToken string) {
                     class="nav navbar-nav navbar-right collapse navbar-collapse">
                     <li><a href="/">Home</a></li>
                     <li><a href="/help">Help</a></li>
-                    if loggedIn {
-                        <li><a href="#">Users</a></li>
+                    if loggedIn && currentUser != nil {
+                        <li><a href="/users">Users</a></li>
                         <li class="dropdown">
                             <a href="#" id="account" class="dropdown-toggle">
                                 Account <b class="caret"></b>
                             </a>
                             <ul id="dropdown-menu" class="dropdown-menu">
                                 <li><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", currentUser.ID)) }>Profile</a></li>
-                                <li><a href="#">Settings</a></li>
+                                <li><a href={ templ.SafeURL(fmt.Sprintf("/users/%d/edit", currentUser.ID)) }>Settings</a></li>
                                 <li class="divider"></li>
                                 <li>
                                     <form action="/logout" method="post" style="display:inline;">
-                                        <input type="hidden" name="csrf_token"
-                                               value={ csrfToken }/>
+                                        <input type="hidden" name="_method" value="DELETE"/>
+                                        <input type="hidden" name="csrf_token" value={ csrfToken }/>
                                         <button type="submit" class="logout-link">Log out</button>
                                     </form>
                                 </li>

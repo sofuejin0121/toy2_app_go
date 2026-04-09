@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN remember_digest VARCHAR(255) NOT NULL DEFAULT '';

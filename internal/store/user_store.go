@@ -3,8 +3,10 @@ package store
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sofuejin0121/toy_app_go/internal/model"
 	"strings"
+
+	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type userScanner interface {
@@ -15,7 +17,7 @@ func scanUser(scanner userScanner) (model.User, error) {
 	var user model.User
 	var createdAt string
 	var updatedAt string
-	if err := scanner.Scan(&user.ID, &user.Name, &user.Email, &user.PasswordDigest, &createdAt, &updatedAt); err != nil {
+	if err := scanner.Scan(&user.ID, &user.Name, &user.Email, &user.PasswordDigest, &user.RememberDigest, &user.Admin, &createdAt, &updatedAt); err != nil {
 		return model.User{}, err
 	}
 	user.CreatedAt = parseTime(createdAt)
@@ -23,34 +25,51 @@ func scanUser(scanner userScanner) (model.User, error) {
 	return user, nil
 }
 
-// AllUsers はすべてのユーザーを返します
-func (s *Store) AllUsers() ([]model.User, error) {
-	rows, err := s.db.Query(
-		"SELECT id, name, email, password_digest, created_at, updated_at FROM users ORDER BY id",
-	)
-	if err != nil {
-		return nil, fmt.Errorf("query all users: %w", err)
+func scanPaginatedUser(scanner userScanner) (model.User, error) {
+	var user model.User
+	var createdAt string
+	var updatedAt string
+	// TODO: Adminを後で追加
+	if err := scanner.Scan(&user.ID, &user.Name, &user.Email, &user.PasswordDigest, &user.RememberDigest, &user.Admin, &createdAt, &updatedAt); err != nil {
+		return model.User{}, err
 	}
-	defer rows.Close()
-
-	var users []model.User
-	for rows.Next() {
-		user, err := scanUser(rows)
-		if err != nil {
-			return nil, fmt.Errorf("scan user: %w", err)
-		}
-		users = append(users, user)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate users: %w", err)
-	}
-	return users, nil
+	user.CreatedAt = parseTime(createdAt)
+	user.UpdatedAt = parseTime(updatedAt)
+	return user, nil
 }
 
+// GetAllUsers はすべてのユーザーを返します
+func (s *Store) GetAllUsers() ([]model.User, error) {
+    rows, err := s.db.Query(`
+        SELECT id, name, email, password_digest, COALESCE(remember_digest, ''),
+               admin, created_at, updated_at
+        FROM users ORDER BY created_at`)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var users []model.User
+    for rows.Next() {
+        var user model.User
+        if err := rows.Scan(
+            &user.ID, &user.Name, &user.Email, &user.PasswordDigest,
+            &user.RememberDigest, &user.CreatedAt, &user.UpdatedAt,
+        ); err != nil {
+            return nil, err
+        }
+        users = append(users, user)
+    }
+    return users, rows.Err()
+}
+// 既存ハンドラー互換のAllUsersラッパーを追加する 
+func (s *Store) AllUsers() ([]model.User, error) {
+	return s.GetAllUsers()
+}
 // GetUser は指定したIDのユーザーを返します
 func (s *Store) GetUser(id int64) (*model.User, error) {
 	row := s.db.QueryRow(
-		"SELECT id, name, email, password_digest, created_at, updated_at FROM users WHERE id = ?",
+		"SELECT id, name, email, password_digest, remember_digest, admin, created_at, updated_at FROM users WHERE id = ?",
 		id,
 	)
 	user, err := scanUser(row)
@@ -92,7 +111,7 @@ func (s *Store) GetMicropostsByUserID(userID int64) ([]model.Micropost, error) {
 // FindUserByEmail はメールアドレスに一致するユーザーを返します。
 func (s *Store) FindUserByEmail(email string) (*model.User, error) {
 	row := s.db.QueryRow(
-		"SELECT id, name, email, password_digest, created_at, updated_at FROM users WHERE email = ?",
+		"SELECT id, name, email, password_digest, remember_digest, admin, created_at, updated_at FROM users WHERE email = ?",
 		strings.ToLower(email),
 	)
 	user, err := scanUser(row)
@@ -122,8 +141,8 @@ func (s *Store) CreateUser(u *model.User) error {
 	// 直接文字列を埋め込むと悪意のある入力でDBを操作される危険があるため
 	// 必ずプレースホルダーを使って値を渡す
 	result, err := s.db.Exec(
-		"INSERT INTO users (name, email, password_digest, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-		u.Name, u.Email, u.PasswordDigest, now, now,
+		"INSERT INTO users (name, email, password_digest,admin, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+		u.Name, u.Email, u.PasswordDigest, u.Admin, now, now,
 	)
 
 	// ④ INSERT が失敗した場合のエラーハンドリング
@@ -166,10 +185,11 @@ func (s *Store) UpdateUser(user *model.User) error {
 	now := nowString()
 	user.Email = strings.ToLower(user.Email) // 保存前に小文字化
 	result, err := s.db.Exec(
-		"UPDATE users SET name = ?, email = ?, password_digest = ?, updated_at = ? WHERE id = ?",
+		"UPDATE users SET name = ?, email = ?, password_digest = ?, admin = ?, updated_at = ? WHERE id = ?",
 		user.Name,
 		user.Email,
 		user.PasswordDigest,
+		user.Admin,
 		now,
 		user.ID,
 	)
@@ -201,4 +221,67 @@ func (s *Store) DeleteUser(id int64) error {
 		return fmt.Errorf("user %d not found", id)
 	}
 	return nil
+}
+
+// UpdatePassword はユーザーのパスワードを更新します。
+func (s *Store) UpdatePassword(userID int64, password string) error {
+	digest, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+	_, err = s.db.Exec(
+		"UPDATE users SET password_digest = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		string(digest), userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+	return nil
+}
+
+// UpdateRememberDigest はremember_digestを更新します。
+func (s *Store) UpdateRememberDigest(userID int64, digest string) error {
+	now := nowString()
+	_, err := s.db.Exec(
+		"UPDATE users SET remember_digest = ?, updated_at = ? WHERE id = ?",
+		digest,
+		now,
+		userID,
+	)
+	return err
+}
+
+// CountUsers はユーザーの総数を返します。
+func (s *Store) CountUsers() (int, error) {
+	row := s.db.QueryRow("SELECT COUNT(*) FROM users")
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, fmt.Errorf("count users: %w", err)
+	}
+	return count, nil
+}
+
+// PaginateUsers はユーザーをページングして返します。
+func (s *Store) PaginateUsers(page, perPage int) ([]model.User, error) {
+    if page < 1 {
+        page = 1
+    }
+    offset := (page - 1) * perPage
+    rows, err := s.db.Query(`
+        SELECT id, name, email, password_digest, remember_digest, admin, created_at, updated_at
+        FROM users ORDER BY created_at LIMIT ? OFFSET ?`, perPage, offset)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var users []model.User
+    for rows.Next() {
+        user, err := scanPaginatedUser(rows)
+        if err != nil {
+            return nil, err
+        }
+        users = append(users, user)
+    }
+    return users, rows.Err()
 }

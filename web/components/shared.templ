@@ -17,3 +17,44 @@ templ ErrorMessages(errors []string) {
         </div>
     }
 }
+
+// Pagination はページネーション情報を保持します
+type Pagination struct {
+    CurrentPage int
+    TotalPages  int
+    Pages       []int
+}
+
+// NewPagination はページネーション情報を作成する
+func NewPagination(page, perPage, totalCount int) Pagination {
+    totalPages := (totalCount + perPage -1 ) / perPage
+    pages := make([]int, totalPages)
+    for i := range pages {
+        pages[i] = i + 1
+    }
+    return Pagination{
+        CurrentPage: page,
+        TotalPages: totalPages,
+        Pages:      pages,
+    }
+}
+
+templ PaginationNav(p Pagination, basePath string) {
+    if p.TotalPages > 1 {
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                for _, page := range p.Pages {
+                    if page == p.CurrentPage {
+                        <li class="active"><span>{ fmt.Sprint(page) }</span></li>
+                    } else {
+                        <li>
+                            <a href={ templ.SafeURL(fmt.Sprintf("%s?page=%d", basePath, page)) }>
+                                { fmt.Sprint(page) }
+                            </a>
+                        </li>
+                    }
+                }
+            </ul>
+        </nav>
+    }
+}

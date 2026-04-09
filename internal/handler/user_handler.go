@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
 	"github.com/sofuejin0121/toy_app_go/internal/model"
@@ -35,20 +36,39 @@ func redirectWithNotice(w http.ResponseWriter, r *http.Request, path string, not
 	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 
+// Index はすべてのユーザーを一覧表示します（ページネーション付き）。
 func (h *UserHandler) Index(w http.ResponseWriter, r *http.Request) {
-	users, err := h.store.AllUsers()
+	pageStr := r.URL.Query().Get("page")
+	page, _ := strconv.Atoi(pageStr)
+	if page < 1 {
+		page = 1
+	}
+	perPage := 30
+	users, err := h.store.PaginateUsers(page, perPage)
 	if err != nil {
-		log.Printf("AllUsers: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("PaginateUsers: %v", err)
+		http.Error(w, "Internal Server Error",
+			http.StatusInternalServerError)
 		return
 	}
-
-	data := components.UserPageData{
-		Title:  "Users",
-		Notice: noticeFromRequest(r),
-		Users:  users,
+	totalUsers, err := h.store.CountUsers()
+	if err != nil {
+		log.Printf("CountUsers: %v", err)
+		http.Error(w, "Internal Server Error",
+			http.StatusInternalServerError)
+		return
 	}
-	_ = components.UserIndex(data).Render(r.Context(), w)
+	pagination := components.NewPagination(page, perPage, totalUsers)
+	data := components.UserPageData{
+		Title:       "All users",
+		Flash:       getFlash(r),
+		LoggedIn:    isLoggedIn(r),
+		CurrentUser: currentUser(r),
+		CSRFToken:   middleware.CSRFTokenFromContext(r),
+		Users:       users,
+		Pagination:  pagination,
+	}
+	components.UserIndex(data).Render(r.Context(), w)
 }
 
 func (h *UserHandler) Show(w http.ResponseWriter, r *http.Request) {
@@ -100,15 +120,15 @@ func (h *UserHandler) Edit(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-
 	data := components.UserPageData{
-		Title:       "Editing user",
-		User:        *user,
-		Action:      fmt.Sprintf("/users/%d", user.ID),
-		SubmitLabel: "Update User",
+		Title:       "Edit user",
+		Flash:       getFlash(r),
+		LoggedIn:    isLoggedIn(r),
+		CurrentUser: currentUser(r),
 		CSRFToken:   middleware.CSRFTokenFromContext(r),
+		User:        *user,
 	}
-	_ = components.UserEdit(data).Render(r.Context(), w)
+	components.UserEdit(data).Render(r.Context(), w)
 }
 
 func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +143,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Password:             r.FormValue("password"),
 		PasswordConfirmation: r.FormValue("password_confirmation"),
 	}
-		if errors := user.Validate(); len(errors) > 0 {
+	if errors := user.Validate(); len(errors) > 0 {
 		data := components.UserPageData{
 			Title:       "Sign up",
 			Flash:       getFlash(r),
@@ -162,17 +182,13 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		_ = components.UserNew(data).Render(r.Context(), w)
 		return
 	}
-	logIn(w, r, user.ID)
+	logIn(w, r, user.ID, h.store)
 	setFlash(w, "success", "Welcome to the Sample App!")
 	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
 }
 
+// Update はユーザー情報を更新する
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
@@ -183,46 +199,114 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	name := strings.TrimSpace(r.FormValue("name"))
+	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
+	password := r.FormValue("password")
+	passwordConfirmation := r.FormValue("password_confirmation")
 
-	user.Name = r.FormValue("name")
-	user.Email = r.FormValue("email")
-	if errors := user.Validate(); len(errors) > 0 {
-		data := components.UserPageData{
-			Title:       "Editing user",
-			User:        *user,
-			Errors:      errors,
-			Action:      fmt.Sprintf("/users/%d", user.ID),
-			SubmitLabel: "Update User",
-			CSRFToken:   middleware.CSRFTokenFromContext(r),
+	user.Name = name
+	user.Email = email
+	errs := user.Validate()
+	if password != "" {
+		if password != passwordConfirmation {
+			errs = append(errs, "Password confirmation doesn't match Password")
 		}
-		_ = components.UserEdit(data).Render(r.Context(), w)
+		if err := model.ValidatePassword(password); err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	if len(errs) > 0 {
+		data := components.UserPageData{
+			Title:       "Edit user",
+			Flash:       getFlash(r),
+			LoggedIn:    isLoggedIn(r),
+			CurrentUser: currentUser(r),
+			CSRFToken:   middleware.CSRFTokenFromContext(r),
+			User:        *user,
+			Errors:      errs,
+		}
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		components.UserEdit(data).Render(r.Context(), w)
 		return
 	}
+
+	if password != "" {
+		if err := h.store.UpdatePassword(id, password); err != nil {
+			log.Printf("UpdatePassword(%d): %v", id, err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	if err := h.store.UpdateUser(user); err != nil {
-		data := components.UserPageData{
-			Title:       "Editing user",
-			User:        *user,
-			Errors:      []string{err.Error()},
-			Action:      fmt.Sprintf("/users/%d", user.ID),
-			SubmitLabel: "Update User",
-			CSRFToken:   middleware.CSRFTokenFromContext(r),
-		}
-		_ = components.UserEdit(data).Render(r.Context(), w)
+		log.Printf("UpdateUser: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-
-	redirectWithNotice(w, r, fmt.Sprintf("/users/%d", user.ID), "User was successfully updated.")
+	setFlash(w, "success", "Profile updated")
+	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
 }
 
+// Destroy はユーザーを削除します。
 func (h *UserHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	if err := h.store.DeleteUser(id); err != nil {
-		http.NotFound(w, r)
+	// 管理者が自分自身を削除することを防止
+	if isCurrentUser(r, id) {
+		setFlash(w, "danger", "Cannot delete own account")
+		http.Redirect(w, r, "/users", http.StatusSeeOther)
 		return
 	}
-	redirectWithNotice(w, r, "/users", "User was successfully destroyed.")
+	if err := h.store.DeleteUser(id); err != nil {
+		log.Printf("DeleteUser: %v", err)
+		http.Error(w, "Internal Server Error",
+			http.StatusInternalServerError)
+		return
+	}
+	setFlash(w, "success", "User deleted")
+	http.Redirect(w, r, "/users", http.StatusSeeOther)
+}
+
+// requireLogin はログイン済みユーザーかどうかで確認するミドルウェア
+func (h *UserHandler) RequireLogin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !isLoggedIn(r) {
+			storeLocation(w, r)
+			setFlash(w, "danger", "Please log in.")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	}
+}
+
+// requireCorrectUser は正しいユーザーかどうか確認するミドルウェア
+func (h *UserHandler) RequireCorrectUser(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		if !isCurrentUser(r, id) {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	}
+}
+
+// requireAdmin は管理者ユーザーかどうか確認するミドルウェア
+func (h *UserHandler) RequireAdmin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := currentUser(r)
+		if user == nil || !user.Admin {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	}
 }

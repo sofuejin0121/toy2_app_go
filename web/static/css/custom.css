@@ -189,3 +189,80 @@ aside section h1 {
   margin: 0 0 0 20px;
   padding: 0;
 }
+
+.checkbox {
+  margin-top: -10px;
+  margin-bottom: 10px;
+}
+
+.checkbox span {
+  margin-left: 20px;
+  font-weight: normal;
+}
+
+#session_remember_me {
+  width: auto;
+  margin-left: 0;
+}
+
+/* Users index */
+
+.users {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.users li {
+  overflow: auto;
+  padding: 10px 0;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.users li:last-child {
+  border-bottom: 0;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: #d9534f;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+}
+
+.btn-delete:hover {
+  color: #c9302c;
+  text-decoration: underline;
+}
+
+/* pagination */
+
+.pagination {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 20px 0;
+}
+
+.pagination li a,
+.pagination li span {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  text-decoration: none;
+  color: #337ab7;
+  display: inline-block;
+}
+
+.pagination li.active span {
+  background-color: #337ab7;
+  color: white;
+  border-color: #337ab7;
+}
+
+.pagination li a:hover {
+  background-color: #eee;
+}

@@ -21,7 +21,6 @@ type SessionPageData struct {
 	DebugInfo   string
 }
 
-// SessionNew はログインフォームを表示するコンポーネント
 func SessionNew(data SessionPageData) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -62,13 +61,13 @@ func SessionNew(data SessionPageData) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(data.CSRFToken)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/sessions.templ`, Line: 23, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/sessions.templ`, Line: 24, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <label for=\"session_email\">Email</label> <input class=\"form-control\" type=\"email\" name=\"email\" id=\"session_email\"> <label for=\"session_password\">Password</label> <input class=\"form-control\" type=\"password\" name=\"password\" id=\"session_password\"> <input type=\"submit\" name=\"commit\" value=\"Log in\" class=\"btn btn-primary\"></form><p>New user? <a href=\"/signup\">Sign up now!</a></p></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <label for=\"session_email\">Email</label> <input class=\"form-control\" type=\"email\" name=\"email\" id=\"session_email\"> <label for=\"session_password\">Password</label> <input class=\"form-control\" type=\"password\" name=\"password\" id=\"session_password\"> <label for=\"session_remember_me\" class=\"checkbox inline\"><input type=\"checkbox\" name=\"remember_me\" id=\"session_remember_me\" value=\"1\"> <span>Remember me on this computer</span></label> <input type=\"submit\" name=\"commit\" value=\"Log in\" class=\"btn btn-primary\"></form><p>New user? <a href=\"/signup\">Sign up now!</a></p></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
