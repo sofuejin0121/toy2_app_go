@@ -101,7 +101,7 @@ func (h *MicropostHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imagePath, imageErrs := h.processImageUpload(r)
+	imagePath, imageErrs := processImageUpload(r, h.imageDir)
 	if len(imageErrs) > 0 {
 		setFlash(w, "danger", strings.Join(imageErrs, ", "))
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -212,7 +212,7 @@ func (h *MicropostHandler) Index(w http.ResponseWriter, r *http.Request) {
 
 // processImageUpload はリクエストから画像ファイルを処理します。
 // 画像がアップロードされていない場合は空文字列を返します。
-func (h *MicropostHandler) processImageUpload(r *http.Request) (string, []string) {
+func processImageUpload(r *http.Request, imageDir string) (string, []string) {
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		return "", nil
@@ -242,7 +242,7 @@ func (h *MicropostHandler) processImageUpload(r *http.Request) (string, []string
 	}
 	filename := fmt.Sprintf("%d_%d%s", time.Now().UnixNano(), header.Size, strings.ToLower(ext))
 
-	dst, err := os.Create(filepath.Join(h.imageDir, filename))
+	dst, err := os.Create(filepath.Join(imageDir, filename))
 	if err != nil {
 		return "", []string{"Failed to save image"}
 	}

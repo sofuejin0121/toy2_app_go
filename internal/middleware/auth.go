@@ -6,12 +6,14 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"github.com/sofuejin0121/toy_app_go/internal/model"
-	"github.com/sofuejin0121/toy_app_go/internal/store"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
 
 type contextKey string
@@ -25,6 +27,27 @@ const (
 )
 
 var cookieSecret = []byte("sample-app-cookie-secret") // クッキーの秘密鍵
+
+// CookieSameSite はクロスオリジン環境では SameSite=None を、
+// 同一オリジン環境では SameSite=Lax を返します。
+func CookieSameSite() http.SameSite {
+	if os.Getenv("FRONTEND_URL") != "" {
+		return http.SameSiteNoneMode
+	}
+	return http.SameSiteLaxMode
+}
+
+// IsCrossOrigin は FRONTEND_URL が設定されている場合（クロスオリジン環境）true を返します。
+// SameSite=None には Secure フラグが必須のため、Secure の設定にも使用します。
+func IsCrossOrigin() bool {
+	return os.Getenv("FRONTEND_URL") != ""
+}
+
+// cookieSameSite は内部用エイリアス
+func cookieSameSite() http.SameSite { return CookieSameSite() }
+
+// cookieSecure は内部用エイリアス
+func cookieSecure() bool { return IsCrossOrigin() }
 
 // Auth はセッションCookieからユーザーを解決し、CSRFトークンも扱うミドルウェア
 // なぜ3層のネストになるのか？
@@ -95,7 +118,8 @@ func SetSessionValue(w http.ResponseWriter, key, value string) {
 		Value:    signValue(value),
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   cookieSecure(),
+		SameSite: cookieSameSite(),
 	})
 }
 
@@ -153,7 +177,8 @@ func DeleteCookie(w http.ResponseWriter, name string) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   cookieSecure(),
+		SameSite: cookieSameSite(),
 	})
 }
 
@@ -199,7 +224,8 @@ func getOrCreateCSRFToken(w http.ResponseWriter, r *http.Request) string {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   cookieSecure(),
+		SameSite: cookieSameSite(),
 	})
 	return token
 }

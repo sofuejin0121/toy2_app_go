@@ -41,105 +41,88 @@ func main() {
 	}
 	defer s.Close()
 
-	userHandler := handler.NewUserHandler(s, m)
-	sessionHandler := handler.NewSessionHandler(s)
-	staticHandler := handler.NewStaticHandler(s)
-	accountActivationHandler := handler.NewAccountActivationHandler(s)
-	passwordResetHandler := handler.NewPasswordResetHandler(s, m)
 	imageDir := filepath.Join("web", "static", "images", "microposts")
-	micropostHandler := handler.NewMicropostHandler(s, imageDir)
-	relationshipHandler := handler.NewRelationshipHandler(s, m)
-	likeHandler := handler.NewLikeHandler(s, m)
-	userPreferenceHandler := handler.NewUserPreferenceHandler(s, m)
-	notificationHandler := handler.NewNotificationHandler(s)
-	adminHandler := handler.NewAdminHandler(s)
-	bookmarkHandler := handler.NewBookmarkHandler(s)
+	apiHandler := handler.NewAPIHandler(s, m, imageDir)
 
 	mux := http.NewServeMux()
 
-	// 静的ページ
-	mux.HandleFunc("GET /{$}", staticHandler.Home)
-	mux.HandleFunc("GET /help", staticHandler.Help)
-	mux.HandleFunc("GET /about", staticHandler.About)
-	mux.HandleFunc("GET /contact", staticHandler.Contact)
+	// ---- JSON API ルート (/api/ プレフィックス) ----
+
+	// 認証
+	mux.HandleFunc("GET /api/me", apiHandler.Me)
+	mux.HandleFunc("POST /api/login", apiHandler.Login)
+	mux.HandleFunc("DELETE /api/logout", apiHandler.Logout)
 
 	// ユーザー
-	mux.HandleFunc("GET /signup", userHandler.New)
-	mux.HandleFunc("POST /users", userHandler.Create)
-	mux.HandleFunc("GET /users", handler.RequireLogin(userHandler.Index))
-	mux.HandleFunc("GET /users/{id}", userHandler.Show)
-	mux.HandleFunc("GET /users/{id}/edit",
-		handler.RequireLogin(userHandler.RequireCorrectUser(userHandler.Edit)))
-	mux.HandleFunc("PATCH /users/{id}",
-		handler.RequireLogin(userHandler.RequireCorrectUser(userHandler.Update)))
-	mux.HandleFunc("DELETE /users/{id}",
-		handler.RequireLogin(userHandler.RequireAdmin(userHandler.Destroy)))
-	mux.HandleFunc("GET /users/{id}/following",
-		handler.RequireLogin(userHandler.Following))
-	mux.HandleFunc("GET /users/{id}/followers",
-		handler.RequireLogin(userHandler.Followers))
-	mux.HandleFunc("GET /users/{id}/likes",
-		handler.RequireLogin(userHandler.LikedPosts))
-	mux.HandleFunc("GET /users/{id}/bookmarks",
-		handler.RequireLogin(userHandler.BookmarkedPosts))
+	mux.HandleFunc("POST /api/users", apiHandler.CreateUser)
+	mux.HandleFunc("GET /api/users", handler.RequireLogin(apiHandler.ListUsers))
+	mux.HandleFunc("GET /api/users/{id}", apiHandler.GetUser)
+	mux.HandleFunc("PATCH /api/users/{id}", handler.RequireLogin(apiHandler.UpdateUser))
+	mux.HandleFunc("DELETE /api/users/{id}", handler.RequireLogin(apiHandler.DeleteUser))
+	mux.HandleFunc("GET /api/users/{id}/following", handler.RequireLogin(apiHandler.GetFollowing))
+	mux.HandleFunc("GET /api/users/{id}/followers", handler.RequireLogin(apiHandler.GetFollowers))
+	mux.HandleFunc("GET /api/users/{id}/likes", handler.RequireLogin(apiHandler.GetUserLikes))
+	mux.HandleFunc("GET /api/users/{id}/bookmarks", handler.RequireLogin(apiHandler.GetUserBookmarks))
 
-	// セッション
-	mux.HandleFunc("GET /login", sessionHandler.New)
-	mux.HandleFunc("POST /login", sessionHandler.Create)
-	mux.HandleFunc("DELETE /logout", sessionHandler.Destroy)
-
-	// アカウント有効化
-	mux.HandleFunc("GET /account_activation/{id}/edit", accountActivationHandler.Edit)
-
-	// パスワード再設定
-	mux.HandleFunc("GET /password_resets/new", passwordResetHandler.New)
-	mux.HandleFunc("POST /password_resets", passwordResetHandler.Create)
-	mux.HandleFunc("GET /password_resets/{id}/edit", passwordResetHandler.Edit)
-	mux.HandleFunc("PATCH /password_resets/{id}", passwordResetHandler.Update)
+	// フィード
+	mux.HandleFunc("GET /api/feed", handler.RequireLogin(apiHandler.Feed))
 
 	// マイクロポスト
-	mux.HandleFunc("POST /microposts",
-		handler.RequireLogin(micropostHandler.Create))
-	mux.HandleFunc("GET /microposts/{id}", micropostHandler.Show)
-	mux.HandleFunc("DELETE /microposts/{id}",
-		handler.RequireLogin(
-			micropostHandler.RequireCorrectUser(micropostHandler.Destroy)))
-	mux.HandleFunc("GET /microposts", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/", http.StatusFound)
-	})
+	mux.HandleFunc("GET /api/microposts/{id}", apiHandler.GetMicropost)
+	mux.HandleFunc("POST /api/microposts", handler.RequireLogin(apiHandler.CreateMicropost))
+	mux.HandleFunc("DELETE /api/microposts/{id}", handler.RequireLogin(apiHandler.DeleteMicropost))
 
-	// リレーションシップ
-	mux.HandleFunc("POST /relationships",
-		handler.RequireLogin(relationshipHandler.Create))
-	mux.HandleFunc("DELETE /relationships/{id}",
-		handler.RequireLogin(relationshipHandler.Destroy))
+	// フォロー
+	mux.HandleFunc("POST /api/relationships", handler.RequireLogin(apiHandler.CreateRelationship))
+	mux.HandleFunc("DELETE /api/relationships/{id}", handler.RequireLogin(apiHandler.DeleteRelationship))
 
-	// いいね: POST /likes でいいね作成、DELETE /likes/{micropost_id} でいいね解除
-	mux.HandleFunc("POST /likes",
-		handler.RequireLogin(likeHandler.Create))
-	mux.HandleFunc("DELETE /likes/{id}",
-		handler.RequireLogin(likeHandler.Destroy))
+	// いいね
+	mux.HandleFunc("POST /api/likes", handler.RequireLogin(apiHandler.CreateLike))
+	mux.HandleFunc("DELETE /api/likes/{id}", handler.RequireLogin(apiHandler.DeleteLike))
 
 	// ブックマーク
-	mux.HandleFunc("POST /bookmarks",
-		handler.RequireLogin(bookmarkHandler.Create))
-	mux.HandleFunc("DELETE /bookmarks/{id}",
-		handler.RequireLogin(bookmarkHandler.Destroy))
-	mux.HandleFunc("GET /notifications", handler.RequireLogin(notificationHandler.Index))
-	mux.HandleFunc("GET /admin", handler.RequireLogin(userHandler.RequireAdmin(adminHandler.Index)))
+	mux.HandleFunc("POST /api/bookmarks", handler.RequireLogin(apiHandler.CreateBookmark))
+	mux.HandleFunc("DELETE /api/bookmarks/{id}", handler.RequireLogin(apiHandler.DeleteBookmark))
 
-	// 通知設定
-	mux.HandleFunc("GET /settings", handler.RequireLogin(userPreferenceHandler.Edit))
-	mux.HandleFunc("PATCH /settings", handler.RequireLogin(userPreferenceHandler.Update))
-	mux.HandleFunc("DELETE /notifications/{id}", handler.RequireLogin(notificationHandler.Destroy))
+	// 通知
+	mux.HandleFunc("GET /api/notifications", handler.RequireLogin(apiHandler.ListNotifications))
+	mux.HandleFunc("GET /api/notifications/unread_count", apiHandler.UnreadNotificationCount)
+	mux.HandleFunc("DELETE /api/notifications/{id}", handler.RequireLogin(apiHandler.DeleteNotification))
 
-	fs := http.FileServer(http.Dir("web/static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	// 管理者
+	mux.HandleFunc("GET /api/admin", handler.RequireLogin(apiHandler.AdminStats))
 
-	// Flash → Auth → MethodOverride の順で適用
-	// Flash を先に挟むことで、リクエストごとに flash Cookie を読み取った後に削除し
-	// フラッシュメッセージが次のリクエストに持ち越されないようにする
-	h := middleware.Flash(middleware.Auth(s)(middleware.MethodOverride(mux)))
+	// 設定
+	mux.HandleFunc("GET /api/settings", handler.RequireLogin(apiHandler.GetSettings))
+	mux.HandleFunc("PATCH /api/settings", handler.RequireLogin(apiHandler.UpdateSettings))
+
+	// アカウント有効化
+	mux.HandleFunc("GET /api/account_activations/{token}/edit", apiHandler.ActivateAccount)
+
+	// パスワードリセット
+	mux.HandleFunc("POST /api/password_resets", apiHandler.CreatePasswordReset)
+	mux.HandleFunc("GET /api/password_resets/{token}/edit", apiHandler.GetPasswordReset)
+	mux.HandleFunc("PATCH /api/password_resets/{token}", apiHandler.UpdatePasswordReset)
+
+	// ---- 静的ファイル ----
+
+	// micropost画像
+	imgFS := http.FileServer(http.Dir("web/static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", imgFS))
+
+	// React SPAビルド成果物
+	distDir := "frontend/dist"
+	distFS := http.FileServer(http.Dir(distDir))
+
+	// /assets/ 等の静的ファイルはそのまま配信
+	mux.Handle("/assets/", distFS)
+
+	// それ以外の全ルートはindex.htmlを返す（React Routerが処理）
+	mux.HandleFunc("/", handler.ServeReact(distDir))
+
+	// CORS → Flash → Auth → MethodOverride → CSRF の順でミドルウェア適用
+	// FRONTEND_URL が設定されている場合のみ CORS ヘッダーが付与される
+	h := middleware.CORS(middleware.Flash(middleware.Auth(s)(middleware.MethodOverride(middleware.CSRF(mux)))))
 
 	log.Printf("Starting server on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, h))

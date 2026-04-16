@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
@@ -62,7 +63,8 @@ func rememberUser(w http.ResponseWriter, user *model.User, s *store.Store) {
 		Expires:  time.Now().Add(middleware.PermanentCookieExpiry),
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   middleware.IsCrossOrigin(),
+		SameSite: middleware.CookieSameSite(),
 	})
 	// 記憶トークンを永続cookieに保存
 	http.SetCookie(w, &http.Cookie{
@@ -71,14 +73,20 @@ func rememberUser(w http.ResponseWriter, user *model.User, s *store.Store) {
 		Expires:  time.Now().Add(middleware.PermanentCookieExpiry),
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   middleware.IsCrossOrigin(),
+		SameSite: middleware.CookieSameSite(),
 	})
 }
 
 // RequireLogin はログインしていないユーザーをリダイレクトするミドルウェアです。
+// /api/ プレフィックスのリクエストには JSON エラーを返します。
 func RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !isLoggedIn(r) {
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
 			storeLocation(w, r)
 			setFlash(w, "danger", "Please log in.")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)

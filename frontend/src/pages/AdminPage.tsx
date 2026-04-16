@@ -1,0 +1,83 @@
+import { useAtom } from 'jotai';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getAdminStats } from '../api/client';
+import Layout from '../components/Layout';
+import { currentUserAtom } from '../store/auth';
+import type { AdminStats } from '../types';
+
+export default function AdminPage() {
+  const [currentUser] = useAtom(currentUserAtom);
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser?.admin) {
+      navigate('/');
+      return;
+    }
+    getAdminStats()
+      .then((data) => setStats(data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [currentUser, navigate]);
+
+  if (loading)
+    return (
+      <Layout>
+        <div className="text-center py-10 text-gray-400">読み込み中...</div>
+      </Layout>
+    );
+  if (!stats) return null;
+
+  const maxCount = Math.max(...stats.daily_signups.map((d) => d.count), 1);
+
+  return (
+    <Layout>
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">管理者ダッシュボード</h1>
+
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[
+            { label: '総ユーザー数', value: stats.total_users, color: 'text-blue-600' },
+            { label: '総投稿数', value: stats.total_posts, color: 'text-green-600' },
+            { label: '本日の新規登録', value: stats.today_signups, color: 'text-purple-600' },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="bg-white rounded-xl border border-gray-200 p-4 text-center"
+            >
+              <div className={`text-3xl font-bold ${item.color}`}>{item.value}</div>
+              <div className="text-sm text-gray-500 mt-1">{item.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">過去7日間の新規登録</h2>
+          {stats.daily_signups.length === 0 ? (
+            <p className="text-gray-400 text-sm">データがありません</p>
+          ) : (
+            <div className="space-y-2">
+              {stats.daily_signups.map((d) => (
+                <div key={d.date} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500 w-24 shrink-0">{d.date}</span>
+                  <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all"
+                      style={{ width: `${(d.count / maxCount) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 w-6 text-right">
+                    {d.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Layout>
+  );
+}
