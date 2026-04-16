@@ -19,10 +19,23 @@ func main() {
 	}
 	var m mailer.Mailer
 	if os.Getenv("GO_ENV") == "production" {
-		m = &mailer.ResendMailer{
-			APIKey:  os.Getenv("RESEND_API_KEY"),
-			From:    os.Getenv("MAILER_FROM"),
-			AppHost: os.Getenv("APP_HOST"),
+		switch os.Getenv("MAILER") {
+		case "smtp":
+			smtpPort := 587
+			m = &mailer.SMTPMailer{
+				Host:     os.Getenv("SMTP_HOST"),
+				Port:     smtpPort,
+				Username: os.Getenv("SMTP_USERNAME"),
+				Password: os.Getenv("SMTP_PASSWORD"),
+				From:     os.Getenv("MAILER_FROM"),
+				AppHost:  os.Getenv("APP_HOST"),
+			}
+		default:
+			m = &mailer.ResendMailer{
+				APIKey:  os.Getenv("RESEND_API_KEY"),
+				From:    os.Getenv("MAILER_FROM"),
+				AppHost: os.Getenv("APP_HOST"),
+			}
 		}
 	} else {
 		m = &mailer.LogMailer{

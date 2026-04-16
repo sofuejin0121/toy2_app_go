@@ -19,7 +19,7 @@ func (h *APIHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		PasswordConfirmation string `json:"password_confirmation"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request")
+		writeError(w, http.StatusBadRequest, "リクエストが不正です")
 		return
 	}
 	user := model.User{
@@ -33,6 +33,10 @@ func (h *APIHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := user.SetPassword(user.Password); err != nil {
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
+		return
+	}
+	if err := user.CreateActivationDigest(); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -62,14 +66,14 @@ func (h *APIHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if query != "" {
 		users, err = h.store.SearchActivatedUsers(query, page, perPage)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 			return
 		}
 		total, _ = h.store.CountSearchActivatedUsers(query)
 	} else {
 		users, err = h.store.GetActivatedUsers(page)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 			return
 		}
 		total, _ = h.store.CountActivatedUsers()
@@ -89,12 +93,12 @@ func (h *APIHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	user, err := h.store.GetUser(id)
 	if err != nil || !user.Activated {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -150,12 +154,12 @@ func (h *APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || cu.ID != id {
-		writeError(w, http.StatusForbidden, "forbidden")
+		writeError(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 	user, err := h.store.GetUser(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	var body struct {
@@ -166,7 +170,7 @@ func (h *APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		PasswordConfirmation string `json:"password_confirmation"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request")
+		writeError(w, http.StatusBadRequest, "リクエストが不正です")
 		return
 	}
 	user.Name = strings.TrimSpace(body.Name)
@@ -176,7 +180,7 @@ func (h *APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	errs := user.Validate()
 	if body.Password != "" {
 		if body.Password != body.PasswordConfirmation {
-			errs = append(errs, "Password confirmation doesn't match Password")
+			errs = append(errs, "パスワード確認が一致しません")
 		}
 		if err := model.ValidatePassword(body.Password); err != nil {
 			errs = append(errs, err.Error())
@@ -188,12 +192,12 @@ func (h *APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if body.Password != "" {
 		if err := h.store.UpdatePassword(id, body.Password); err != nil {
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 			return
 		}
 	}
 	if err := h.store.UpdateUser(user); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	updated, _ := h.store.GetUser(id)
@@ -204,20 +208,20 @@ func (h *APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	cu := h.requireAuth(w, r)
 	if cu == nil || !cu.Admin {
-		writeError(w, http.StatusForbidden, "forbidden")
+		writeError(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "IDが不正です")
 		return
 	}
 	if cu.ID == id {
-		writeError(w, http.StatusBadRequest, "cannot delete own account")
+		writeError(w, http.StatusBadRequest, "自分のアカウントは削除できません")
 		return
 	}
 	if err := h.store.DeleteUser(id); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "deleted"})
@@ -227,12 +231,12 @@ func (h *APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	user, err := h.store.GetUser(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -262,12 +266,12 @@ func (h *APIHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	user, err := h.store.GetUser(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -297,12 +301,12 @@ func (h *APIHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) GetUserLikes(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	user, err := h.store.GetUser(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -339,16 +343,16 @@ func (h *APIHandler) GetUserBookmarks(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	if cu.ID != id {
-		writeError(w, http.StatusForbidden, "forbidden")
+		writeError(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 	user, err := h.store.GetUser(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
