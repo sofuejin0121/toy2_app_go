@@ -2,6 +2,7 @@ import { useSetAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { activateAccount } from '../api/client';
+import { getErrorMessage } from '../api/errors';
 import Layout from '../components/Layout';
 import { currentUserAtom } from '../store/auth';
 
@@ -27,9 +28,9 @@ export default function AccountActivationPage() {
         setMessage(data.message);
         setTimeout(() => navigate(`/users/${data.user.id}`), 2000);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         setStatus('error');
-        setMessage(err.response?.data?.error || '有効化に失敗しました');
+        setMessage(getErrorMessage(err, '有効化に失敗しました'));
       });
   }, [token, email, setCurrentUser, navigate]);
 

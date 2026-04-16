@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import type { UserProfile } from '../types';
+import type { UserStatSummary } from '../types';
 
 interface Props {
-  profile: UserProfile;
+  profile: UserStatSummary;
 }
 
 export default function UserStatBar({ profile }: Props) {

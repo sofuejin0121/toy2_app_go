@@ -3,14 +3,7 @@ import { Link } from 'react-router-dom';
 import { deleteNotification, listNotifications } from '../api/client';
 import Layout from '../components/Layout';
 import type { Notification } from '../types';
-
-function timeAgo(dateStr: string): string {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60) return `${Math.floor(diff)}秒前`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}分前`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}時間前`;
-  return `${Math.floor(diff / 86400)}日前`;
-}
+import { timeAgo } from '../utils/timeAgo';
 
 function actionLabel(type: string): string {
   switch (type) {

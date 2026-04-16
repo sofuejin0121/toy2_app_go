@@ -19,9 +19,14 @@ import UserShowPage from './pages/UserShowPage';
 import { currentUserAtom } from './store/auth';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // undefined = ロード中, null = 未ログイン, User = ログイン済み
+  // undefined = /me 取得中, null = 未ログイン, User = ログイン済み
   const [currentUser] = useAtom(currentUserAtom);
-  if (currentUser === undefined) return null;
+  if (currentUser === undefined)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+      </div>
+    );
   if (!currentUser) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

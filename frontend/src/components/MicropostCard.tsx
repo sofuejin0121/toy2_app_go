@@ -4,19 +4,12 @@ import { Link } from 'react-router-dom';
 import { bookmark, deleteMicropost, like, unbookmark, unlike } from '../api/client';
 import { currentUserAtom } from '../store/auth';
 import type { Micropost } from '../types';
+import { timeAgo } from '../utils/timeAgo';
 
 interface Props {
   post: Micropost;
   onDelete?: (id: number) => void;
   onUpdate?: (post: Micropost) => void;
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60) return `${Math.floor(diff)}秒前`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}分前`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}時間前`;
-  return `${Math.floor(diff / 86400)}日前`;
 }
 
 export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
@@ -34,12 +27,14 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
         const res = await unlike(post.id);
         setIsLiked(false);
         setLikeCount(res.count);
+        // API レスポンスの確定値を親リストに伝える（古い likeCount を渡さない）
+        onUpdate?.({ ...post, is_liked: false, like_count: res.count });
       } else {
         const res = await like(post.id);
         setIsLiked(true);
         setLikeCount(res.count);
+        onUpdate?.({ ...post, is_liked: true, like_count: res.count });
       }
-      onUpdate?.({ ...post, is_liked: !isLiked, like_count: likeCount });
     } catch (e) {
       console.error(e);
     }

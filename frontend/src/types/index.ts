@@ -36,16 +36,10 @@ export interface Pagination {
   has_next: boolean;
 }
 
-export interface UserProfile {
-  user: User;
-  is_current_user: boolean;
+// GET /api/users/:id のレスポンス型（UserStatSummary を拡張）
+export interface UserProfile extends UserStatSummary {
   is_following: boolean;
   relationship_id?: number;
-  micropost_count: number;
-  following_count: number;
-  followers_count: number;
-  liked_count: number;
-  bookmark_count: number;
   microposts: Micropost[];
   pagination: Pagination;
 }
@@ -75,4 +69,17 @@ export interface Settings {
 export interface ApiError {
   error?: string;
   errors?: string[];
+}
+
+// UserStatBar が必要とする最小限の統計情報
+// GET /api/users/:id/likes など UserProfile 全体が返らない API でも使えるようにする
+export interface UserStatSummary {
+  user: User;
+  micropost_count: number;
+  following_count: number;
+  followers_count: number;
+  liked_count: number;
+  // is_current_user=true のときのみブックマーク数リンクを表示する
+  is_current_user: boolean;
+  bookmark_count: number;
 }

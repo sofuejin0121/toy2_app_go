@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getUserLikes } from '../api/client';
+import { getErrorMessage } from '../api/errors';
 import Layout from '../components/Layout';
 import MicropostCard from '../components/MicropostCard';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
-import type { Micropost, Pagination as PaginationType, UserProfile } from '../types';
+import type { Micropost, Pagination as PaginationType, UserStatSummary } from '../types';
 
 export default function LikesPage() {
   const { id } = useParams<{ id: string }>();
   const [posts, setPosts] = useState<Micropost[]>([]);
   const [pagination, setPagination] = useState<PaginationType | null>(null);
-  const [profileData, setProfileData] = useState<Partial<UserProfile> | null>(null);
+  const [profileData, setProfileData] = useState<UserStatSummary | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -28,14 +30,13 @@ export default function LikesPage() {
           following_count: data.following_count,
           followers_count: data.followers_count,
           liked_count: data.liked_count,
+          // いいね一覧APIはブックマーク数を返さないため0固定。
+          // is_current_user=false でブックマークリンクは非表示になる。
           bookmark_count: 0,
           is_current_user: false,
-          is_following: false,
-          microposts: [],
-          pagination: data.pagination,
         });
       })
-      .catch(console.error)
+      .catch((err: unknown) => setError(getErrorMessage(err, 'いいね一覧の取得に失敗しました')))
       .finally(() => setLoading(false));
   }, [id, page]);
 
@@ -58,13 +59,18 @@ export default function LikesPage() {
                   {profileData.user.name}
                 </Link>
               </div>
-              {(profileData as UserProfile) && <UserStatBar profile={profileData as UserProfile} />}
+              <UserStatBar profile={profileData} />
             </div>
           </aside>
         )}
 
         <div className="md:col-span-2 space-y-4">
           <h2 className="text-xl font-bold text-gray-900">いいねした投稿</h2>
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+              {error}
+            </div>
+          )}
           {loading ? (
             <div className="text-center py-10 text-gray-400">読み込み中...</div>
           ) : posts.length === 0 ? (

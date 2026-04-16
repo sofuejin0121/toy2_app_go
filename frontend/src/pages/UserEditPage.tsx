@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUser, updateUser } from '../api/client';
 import { getErrorList } from '../api/errors';
@@ -21,6 +21,20 @@ export default function UserEditPage() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
 
+  // 自分以外のユーザーの編集ページへのアクセスをリダイレクト
+  // render 中に navigate を呼ぶと React の警告が出るため useEffect に寄せる
+  const redirectedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !redirectedRef.current &&
+      currentUser !== undefined &&
+      (!currentUser || currentUser.id !== Number(id))
+    ) {
+      redirectedRef.current = true;
+      navigate('/');
+    }
+  }, [currentUser, id, navigate]);
+
   useEffect(() => {
     if (!id) return;
     getUser(Number(id))
@@ -34,11 +48,6 @@ export default function UserEditPage() {
       )
       .finally(() => setPageLoading(false));
   }, [id]);
-
-  if (!currentUser || currentUser.id !== Number(id)) {
-    navigate('/');
-    return null;
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
