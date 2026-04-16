@@ -38,7 +38,7 @@ export default function HomePage() {
     return (
       <Layout>
         <div className="text-center py-20">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">MicroApp へようこそ</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Chirp へようこそ</h1>
           <p className="text-gray-500 mb-8 text-lg">短いメッセージをシェアしよう</p>
           <div className="flex justify-center gap-4">
             <Link

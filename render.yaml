@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: toy-app2
+    name: chirp-app
     runtime: go
     buildCommand: go build -o server ./cmd/server
     startCommand: ./server

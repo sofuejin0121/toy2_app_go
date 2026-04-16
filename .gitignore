@@ -9,3 +9,6 @@ db/*.db
 
 # Go生成ファイル（任意）
 # web/components/*_templ.go
+
+# Local Netlify folder
+.netlify
