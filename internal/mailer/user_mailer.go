@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"net/smtp"
 	"net/url"
 	texttemplate "text/template"
@@ -233,4 +235,77 @@ func (m *SMTPMailer) SendPasswordReset(user *model.User) error {
 		return fmt.Errorf("send password reset email: %w", err)
 	}
 	return nil
+}
+
+// brevoSend は Brevo HTTP API でメールを送信する共通ヘルパー
+func brevoSend(apiKey, fromAddr, toAddr, toName, subject, htmlBody, textBody string) error {
+	payload := map[string]any{
+		"sender":      map[string]string{"email": fromAddr},
+		"to":          []map[string]string{{"email": toAddr, "name": toName}},
+		"subject":     subject,
+		"htmlContent": htmlBody,
+		"textContent": textBody,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("brevo marshal: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", "https://api.brevo.com/v3/smtp/email", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("brevo new request: %w", err)
+	}
+	req.Header.Set("api-key", apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("brevo send: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("brevo API error: status %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (m *BrevoMailer) SendAccountActivation(user *model.User) error {
+	activationURL := fmt.Sprintf("https://%s/account_activations/%s/edit?email=%s",
+		m.AppHost, user.ActivationToken, url.QueryEscape(user.Email))
+
+	var htmlBuf bytes.Buffer
+	if err := components.AccountActivationHTML(user.Name, activationURL).Render(context.Background(), &htmlBuf); err != nil {
+		return fmt.Errorf("render html: %w", err)
+	}
+
+	return brevoSend(m.APIKey, m.From, user.Email, user.Name,
+		"Account activation", htmlBuf.String(),
+		fmt.Sprintf("Hi %s,\nActivate your account: %s", user.Name, activationURL))
+}
+
+func (m *BrevoMailer) SendPasswordReset(user *model.User) error {
+	resetURL := fmt.Sprintf("https://%s/password_resets/%s/edit?email=%s",
+		m.AppHost, user.ResetToken, url.QueryEscape(user.Email))
+
+	var htmlBuf bytes.Buffer
+	if err := components.PasswordResetHTML(resetURL).Render(context.Background(), &htmlBuf); err != nil {
+		return fmt.Errorf("render html: %w", err)
+	}
+
+	return brevoSend(m.APIKey, m.From, user.Email, user.Name,
+		"Password reset", htmlBuf.String(),
+		fmt.Sprintf("Hi %s,\nReset your password: %s", user.Name, resetURL))
+}
+
+func (m *BrevoMailer) SendFollowNotification(to *model.User, follower *model.User) error {
+	subject := follower.Name + " があなたをフォローしました"
+	body := follower.Name + " さんから新しいフォローがありました。"
+	return brevoSend(m.APIKey, m.From, to.Email, to.Name, subject, body, body)
+}
+
+func (m *BrevoMailer) SendLikeNotification(to *model.User, liker *model.User, content string) error {
+	subject := liker.Name + " があなたの投稿をいいねしました"
+	body := liker.Name + " さんが「" + content + "」をいいねしました。"
+	return brevoSend(m.APIKey, m.From, to.Email, to.Name, subject, body, body)
 }

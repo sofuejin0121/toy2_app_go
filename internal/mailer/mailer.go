@@ -26,6 +26,13 @@ type LogMailer struct {
 	Host string // ホスト名
 }
 
+// BrevoMailer は Brevo HTTP API を使ったメーラー実装（SMTPポート不使用）
+type BrevoMailer struct {
+	APIKey  string // Brevo API キー
+	From    string // 送信元アドレス
+	AppHost string // アプリケーションのホスト名
+}
+
 // EmailData はメールテンプレートに渡すデータ
 type EmailData struct {
 	User          *model.User

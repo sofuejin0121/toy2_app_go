@@ -19,13 +19,10 @@ func main() {
 	}
 	var m mailer.Mailer
 	if os.Getenv("GO_ENV") == "production" {
-		m = &mailer.SMTPMailer{
-			Host:     os.Getenv("SMTP_HOST"),
-			Port:     587,
-			Username: os.Getenv("SMTP_USERNAME"),
-			Password: os.Getenv("SMTP_PASSWORD"),
-			From:     os.Getenv("MAILER_FROM"),
-			AppHost:  os.Getenv("APP_HOST"),
+		m = &mailer.BrevoMailer{
+			APIKey:  os.Getenv("BREVO_API_KEY"),
+			From:    os.Getenv("MAILER_FROM"),
+			AppHost: os.Getenv("APP_HOST"),
 		}
 	} else {
 		m = &mailer.LogMailer{
