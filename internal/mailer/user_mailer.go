@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/smtp"
@@ -265,7 +266,9 @@ func brevoSend(apiKey, fromAddr, toAddr, toName, subject, htmlBody, textBody str
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("brevo API error: status %d", resp.StatusCode)
+		respBody, _ := io.ReadAll(resp.Body)
+		log.Printf("brevo API error: status %d body: %s", resp.StatusCode, string(respBody))
+		return fmt.Errorf("brevo API error: status %d body: %s", resp.StatusCode, string(respBody))
 	}
 	return nil
 }
