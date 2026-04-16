@@ -1,42 +1,51 @@
 import { useAtom } from 'jotai';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { follow, getUser, unfollow } from '../api/client';
+import { follow, unfollow } from '../api/client';
 import Layout from '../components/Layout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { currentUserAtom } from '../store/auth';
-import type { Micropost, UserProfile } from '../types';
 
 export default function UserShowPage() {
   const { id } = useParams<{ id: string }>();
   const [currentUser] = useAtom(currentUserAtom);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [posts, setPosts] = useState<Micropost[]>([]);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    getUser(Number(id), page)
-      .then((data) => {
-        setProfile(data);
-        setPosts(data.microposts);
-      })
-      .catch(() => setAlert({ type: 'error', message: 'ユーザーが見つかりません' }))
-      .finally(() => setLoading(false));
-  }, [id, page]);
+  // ユーザープロフィールと投稿一覧を取得するカスタムフック
+  // setProfile はフォロー状態の即時反映（楽観的更新）に使用する
+  const { profile, loading, error, setProfile } = useUserProfile(id, page);
 
+  if (loading)
+    return (
+      <Layout>
+        <LoadingSpinner />
+      </Layout>
+    );
+
+  if (error || !profile)
+    return (
+      <Layout alert={alert || undefined}>
+        <div className="text-center py-10 text-gray-400">ユーザーが見つかりません</div>
+      </Layout>
+    );
+
+  const { user } = profile;
+
+  // フォロー / アンフォロー ボタンの処理
+  // API 呼び出しが完了する前に UI を更新する（楽観的更新）
   const handleFollow = async () => {
-    if (!profile || followLoading) return;
+    if (followLoading) return;
     setFollowLoading(true);
     try {
       if (profile.is_following) {
         await unfollow(profile.relationship_id!);
+        // フォロー解除：フォロワー数を -1、フォロー状態を false に更新
         setProfile((prev) =>
           prev
             ? {
@@ -48,7 +57,8 @@ export default function UserShowPage() {
             : prev,
         );
       } else {
-        const res = await follow(profile.user.id);
+        const res = await follow(user.id);
+        // フォロー：フォロワー数を +1、フォロー状態を true に更新
         setProfile((prev) =>
           prev
             ? {
@@ -60,26 +70,11 @@ export default function UserShowPage() {
             : prev,
         );
       }
-    } catch (e) {
-      console.error(e);
+    } catch (_e) {
+      setAlert({ type: 'error', message: 'フォロー操作に失敗しました' });
     }
     setFollowLoading(false);
   };
-
-  if (loading)
-    return (
-      <Layout>
-        <div className="text-center py-10 text-gray-400">読み込み中...</div>
-      </Layout>
-    );
-  if (!profile)
-    return (
-      <Layout alert={alert || undefined}>
-        <div className="text-center py-10 text-gray-400">ユーザーが見つかりません</div>
-      </Layout>
-    );
-
-  const { user } = profile;
 
   return (
     <Layout alert={alert || undefined}>
@@ -127,15 +122,21 @@ export default function UserShowPage() {
         {/* 投稿一覧 */}
         <div className="md:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">投稿</h2>
-          {posts.length === 0 ? (
+          {profile.microposts.length === 0 ? (
             <div className="text-center py-10 text-gray-400">まだ投稿がありません</div>
           ) : (
             <>
-              {posts.map((post) => (
+              {profile.microposts.map((post) => (
                 <MicropostCard
                   key={post.id}
                   post={post}
-                  onDelete={(postId) => setPosts((prev) => prev.filter((p) => p.id !== postId))}
+                  onDelete={(postId) =>
+                    setProfile((prev) =>
+                      prev
+                        ? { ...prev, microposts: prev.microposts.filter((p) => p.id !== postId) }
+                        : prev,
+                    )
+                  }
                 />
               ))}
               {profile.pagination && (

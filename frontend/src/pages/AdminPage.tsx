@@ -1,32 +1,22 @@
 import { useAtom } from 'jotai';
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminStats } from '../api/client';
 import Layout from '../components/Layout';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useAdminStats } from '../hooks/useAdminStats';
 import { currentUserAtom } from '../store/auth';
-import type { AdminStats } from '../types';
 
 export default function AdminPage() {
   const [currentUser] = useAtom(currentUserAtom);
   const navigate = useNavigate();
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!currentUser?.admin) {
-      navigate('/');
-      return;
-    }
-    getAdminStats()
-      .then((data) => setStats(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [currentUser, navigate]);
+  // 管理者統計情報を取得するカスタムフック
+  // 非管理者のアクセスはフック内部でホームへリダイレクトする
+  const { stats, loading } = useAdminStats(currentUser, navigate);
 
   if (loading)
     return (
       <Layout>
-        <div className="text-center py-10 text-gray-400">読み込み中...</div>
+        <LoadingSpinner />
       </Layout>
     );
   if (!stats) return null;

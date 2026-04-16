@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteNotification, listNotifications } from '../api/client';
 import Layout from '../components/Layout';
-import type { Notification } from '../types';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useNotifications } from '../hooks/useNotifications';
 import { timeAgo } from '../utils/timeAgo';
 
+// 通知の種類に応じたラベルを返す
 function actionLabel(type: string): string {
   switch (type) {
     case 'like':
@@ -17,24 +17,8 @@ function actionLabel(type: string): string {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    listNotifications()
-      .then((data) => setNotifications(data.notifications || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteNotification(id);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // 通知一覧を取得し、削除機能を提供するカスタムフック
+  const { notifications, loading, deleteOne } = useNotifications();
 
   return (
     <Layout>
@@ -43,7 +27,7 @@ export default function NotificationsPage() {
 
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
           {loading ? (
-            <div className="text-center py-10 text-gray-400">読み込み中...</div>
+            <LoadingSpinner />
           ) : notifications.length === 0 ? (
             <div className="text-center py-10 text-gray-400">通知はありません</div>
           ) : (
@@ -77,7 +61,7 @@ export default function NotificationsPage() {
                   <p className="text-xs text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
                 </div>
                 <button
-                  onClick={() => handleDelete(n.id)}
+                  onClick={() => deleteOne(n.id)}
                   className="text-xs text-gray-300 hover:text-red-400 shrink-0"
                 >
                   ✕

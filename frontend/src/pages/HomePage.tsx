@@ -1,53 +1,37 @@
 import { useAtom } from 'jotai';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getFeed, getUser } from '../api/client';
-import { getErrorMessage } from '../api/errors';
 import Layout from '../components/Layout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import MicropostForm from '../components/MicropostForm';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
+import { useFeed } from '../hooks/useFeed';
 import { currentUserAtom } from '../store/auth';
-import type { Micropost, Pagination as PaginationType, UserProfile } from '../types';
 
 export default function HomePage() {
+  // Jotai atom からログイン中のユーザーを取得
+  // undefined = /me 確認中、null = 未ログイン、User = ログイン済み
   const [currentUser] = useAtom(currentUserAtom);
-  const [posts, setPosts] = useState<Micropost[]>([]);
-  const [pagination, setPagination] = useState<PaginationType | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // undefined = /me 取得中。null になってからウェルカム画面を表示する
-    if (currentUser === undefined) return;
-    if (currentUser === null) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    Promise.all([getFeed(page), getUser(currentUser.id)])
-      .then(([feed, prof]) => {
-        setPosts(feed.items);
-        setPagination(feed.pagination);
-        setProfile(prof);
-      })
-      .catch((err: unknown) => setError(getErrorMessage(err, 'フィードの取得に失敗しました')))
-      .finally(() => setLoading(false));
-  }, [currentUser, page]);
+  // フィードとサイドバー用プロフィールを取得する（カスタムフック）
+  const { feed, profile, loading, error, addPost, removePost, updatePost } = useFeed(
+    currentUser,
+    page,
+  );
 
-  // /me 取得中は画面全体をスピナーで待機（ウェルカム画面の一瞬表示を防ぐ）
+  // 認証確認中は全画面スピナー（ウェルカム画面の一瞬表示を防ぐ）
   if (currentUser === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+        <LoadingSpinner />
       </div>
     );
   }
 
+  // 未ログインの場合はウェルカム画面を表示
   if (currentUser === null) {
     return (
       <Layout>
@@ -108,7 +92,8 @@ export default function HomePage() {
 
         {/* メインフィード */}
         <div className="md:col-span-2 space-y-4">
-          <MicropostForm onCreated={(post) => setPosts((prev) => [post, ...prev])} />
+          {/* 投稿フォーム：送信成功時に addPost でフィードの先頭に追加 */}
+          <MicropostForm onCreated={addPost} />
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
@@ -117,7 +102,7 @@ export default function HomePage() {
           )}
           {loading ? (
             <div className="text-center py-10 text-gray-400">読み込み中...</div>
-          ) : posts.length === 0 ? (
+          ) : !feed || feed.items.length === 0 ? (
             <div className="text-center py-10 text-gray-400">
               <p>まだ投稿がありません。</p>
               <p className="text-sm mt-1">
@@ -129,17 +114,17 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {posts.map((post) => (
+              {feed.items.map((post) => (
                 <MicropostCard
                   key={post.id}
                   post={post}
-                  onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
-                  onUpdate={(updated) =>
-                    setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-                  }
+                  onDelete={removePost}
+                  onUpdate={updatePost}
                 />
               ))}
-              {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
+              {feed.pagination && (
+                <Pagination pagination={feed.pagination} onPageChange={setPage} />
+              )}
             </>
           )}
         </div>

@@ -1,39 +1,18 @@
-import { useEffect, useState } from 'react';
-import { getSettings, updateSettings } from '../api/client';
 import Layout from '../components/Layout';
-import type { Settings } from '../types';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useSettings } from '../hooks/useSettings';
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  useEffect(() => {
-    getSettings()
-      .then((data) => setSettings(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!settings) return;
-    setSaving(true);
-    try {
-      const updated = await updateSettings(settings);
-      setSettings(updated);
-      setAlert({ type: 'success', message: '設定を保存しました' });
-    } catch (_e) {
-      setAlert({ type: 'error', message: '保存に失敗しました' });
-    }
-    setSaving(false);
-  };
+  // 通知設定の読み込みと保存を管理するカスタムフック
+  // settings - 現在の設定値
+  // setSettings - チェックボックスの変更をローカルに反映する関数
+  // save - 保存ボタン押下時に API へ送信する関数
+  const { settings, setSettings, loading, saving, alert, save } = useSettings();
 
   if (loading)
     return (
       <Layout>
-        <div className="text-center py-10 text-gray-400">読み込み中...</div>
+        <LoadingSpinner />
       </Layout>
     );
 
@@ -44,7 +23,13 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-6">通知設定</h1>
 
           {settings && (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                save(settings);
+              }}
+              className="space-y-4"
+            >
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
                   <p className="font-medium text-gray-900 text-sm">フォロー通知メール</p>

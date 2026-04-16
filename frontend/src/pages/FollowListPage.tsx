@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getFollowers, getFollowing } from '../api/client';
-import { getErrorMessage } from '../api/errors';
 import Layout from '../components/Layout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import Pagination from '../components/Pagination';
 import UserCard from '../components/UserCard';
 import UserStatBar from '../components/UserStatBar';
-import type { Pagination as PaginationType, User, UserStatSummary } from '../types';
+import { useFollowList } from '../hooks/useFollowList';
 
 interface Props {
   mode: 'following' | 'followers';
@@ -14,40 +13,10 @@ interface Props {
 
 export default function FollowListPage({ mode }: Props) {
   const { id } = useParams<{ id: string }>();
-  const [users, setUsers] = useState<User[]>([]);
-  // フォロー一覧APIは liked_count / bookmark_count を返さないため UserStatSummary を部分的に保持
-  const [profileData, setProfileData] = useState<Omit<
-    UserStatSummary,
-    'liked_count' | 'bookmark_count' | 'is_current_user'
-  > | null>(null);
-  const [pagination, setPagination] = useState<PaginationType | null>(null);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    const fn = mode === 'following' ? getFollowing : getFollowers;
-    fn(Number(id), page)
-      .then((data) => {
-        setUsers(data.users);
-        setPagination(data.pagination);
-        setProfileData({
-          user: data.user,
-          following_count: data.following_count,
-          followers_count: data.followers_count,
-          micropost_count: data.micropost_count,
-        });
-      })
-      .catch((err: unknown) => setError(getErrorMessage(err, 'ユーザー一覧の取得に失敗しました')))
-      .finally(() => setLoading(false));
-  }, [id, mode, page]);
-
-  // UserStatBar 用に不足フィールドを補完する（フォロー一覧APIでは liked_count 等が返らない）
-  const statSummary: UserStatSummary | null = profileData
-    ? { ...profileData, liked_count: 0, bookmark_count: 0, is_current_user: false }
-    : null;
+  // フォロー/フォロワー一覧を取得するカスタムフック
+  const { users, statSummary, pagination, loading, error } = useFollowList(id, mode, page);
 
   return (
     <Layout>
@@ -84,7 +53,7 @@ export default function FollowListPage({ mode }: Props) {
               </div>
             )}
             {loading ? (
-              <div className="text-center py-8 text-gray-400">読み込み中...</div>
+              <LoadingSpinner />
             ) : users.length === 0 ? (
               <div className="text-center py-8 text-gray-400">まだいません</div>
             ) : (

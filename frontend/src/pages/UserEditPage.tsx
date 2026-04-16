@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getUser, updateUser } from '../api/client';
 import { getErrorList } from '../api/errors';
 import Layout from '../components/Layout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { currentUserAtom } from '../store/auth';
 
 export default function UserEditPage() {
@@ -18,11 +19,12 @@ export default function UserEditPage() {
     password_confirmation: '',
   });
   const [errors, setErrors] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
 
   // 自分以外のユーザーの編集ページへのアクセスをリダイレクト
   // render 中に navigate を呼ぶと React の警告が出るため useEffect に寄せる
+  // redirectedRef はリダイレクトを1回だけ実行するためのフラグ
   const redirectedRef = useRef(false);
   useEffect(() => {
     if (
@@ -35,42 +37,51 @@ export default function UserEditPage() {
     }
   }, [currentUser, id, navigate]);
 
+  // 編集対象ユーザーの現在値をフォームに反映する
   useEffect(() => {
     if (!id) return;
-    getUser(Number(id))
-      .then((data) =>
-        setForm((f) => ({
-          ...f,
+
+    async function loadUser() {
+      try {
+        const data = await getUser(Number(id));
+        setForm((prev) => ({
+          ...prev,
           name: data.user.name,
           email: data.user.email,
-          bio: data.user.bio || '',
-        })),
-      )
-      .finally(() => setPageLoading(false));
+          bio: data.user.bio ?? '',
+        }));
+      } finally {
+        setPageLoading(false);
+      }
+    }
+
+    loadUser();
   }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // フォーム送信：プロフィールを更新して詳細ページへ遷移
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setErrors([]);
     try {
       const updated = await updateUser(Number(id), form);
+      // Jotai atom を更新してヘッダーの表示名などを即時反映する
       setCurrentUser({ ...currentUser, ...updated });
       navigate(`/users/${id}`);
     } catch (err: unknown) {
       setErrors(getErrorList(err));
     }
-    setLoading(false);
+    setSubmitting(false);
   };
 
   if (pageLoading)
     return (
       <Layout>
-        <div className="text-center py-10 text-gray-400">読み込み中...</div>
+        <LoadingSpinner />
       </Layout>
     );
 
@@ -154,10 +165,10 @@ export default function UserEditPage() {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? '保存中...' : '変更を保存'}
+              {submitting ? '保存中...' : '変更を保存'}
             </button>
           </form>
         </div>

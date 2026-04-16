@@ -1,38 +1,26 @@
 import { useAtom } from 'jotai';
-import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getMicropost } from '../api/client';
 import Layout from '../components/Layout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import MicropostForm from '../components/MicropostForm';
+import { useMicropostThread } from '../hooks/useMicropostThread';
 import { currentUserAtom } from '../store/auth';
-import type { Micropost } from '../types';
 
 export default function MicropostPage() {
   const { id } = useParams<{ id: string }>();
   const [currentUser] = useAtom(currentUserAtom);
-  const [post, setPost] = useState<Micropost | null>(null);
-  const [replies, setReplies] = useState<Micropost[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    getMicropost(Number(id))
-      .then((data) => {
-        setPost(data.post);
-        setReplies(data.replies);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [id]);
+  // 投稿本文とリプライ一覧を取得するカスタムフック
+  const { post, setPost, replies, setReplies, loading } = useMicropostThread(id);
 
   if (loading)
     return (
       <Layout>
-        <div className="text-center py-10 text-gray-400">読み込み中...</div>
+        <LoadingSpinner />
       </Layout>
     );
+
   if (!post)
     return (
       <Layout>
@@ -49,11 +37,7 @@ export default function MicropostPage() {
           </Link>
         </div>
 
-        <MicropostCard
-          post={post}
-          onDelete={() => window.history.back()}
-          onUpdate={(updated) => setPost(updated)}
-        />
+        <MicropostCard post={post} onDelete={() => window.history.back()} onUpdate={setPost} />
 
         {currentUser && (
           <MicropostForm
