@@ -19,8 +19,8 @@ func main() {
 	}
 	var m mailer.Mailer
 	if os.Getenv("GO_ENV") == "production" {
-		m = &mailer.BrevoMailer{
-			APIKey:  os.Getenv("BREVO_API_KEY"),
+		m = &mailer.ResendMailer{
+			APIKey:  os.Getenv("RESEND_API_KEY"),
 			From:    os.Getenv("MAILER_FROM"),
 			AppHost: os.Getenv("APP_HOST"),
 		}

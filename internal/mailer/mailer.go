@@ -33,6 +33,13 @@ type BrevoMailer struct {
 	AppHost string // アプリケーションのホスト名
 }
 
+// ResendMailer は Resend HTTP API を使ったメーラー実装
+type ResendMailer struct {
+	APIKey  string // Resend API キー
+	From    string // 送信元アドレス（例: "Chirp <onboarding@resend.dev>"）
+	AppHost string // アプリケーションのホスト名（メール内URLに使用）
+}
+
 // EmailData はメールテンプレートに渡すデータ
 type EmailData struct {
 	User          *model.User

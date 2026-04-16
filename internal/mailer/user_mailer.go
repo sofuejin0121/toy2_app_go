@@ -312,3 +312,78 @@ func (m *BrevoMailer) SendLikeNotification(to *model.User, liker *model.User, co
 	body := liker.Name + " さんが「" + content + "」をいいねしました。"
 	return brevoSend(m.APIKey, m.From, to.Email, to.Name, subject, body, body)
 }
+
+// resendSend は Resend HTTP API でメールを送信する共通ヘルパー
+func resendSend(apiKey, fromAddr, toAddr, subject, htmlBody, textBody string) error {
+	payload := map[string]any{
+		"from":    fromAddr,
+		"to":      []string{toAddr},
+		"subject": subject,
+		"html":    htmlBody,
+		"text":    textBody,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("resend marshal: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("resend new request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("resend send: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(resp.Body)
+		log.Printf("resend API error: status %d body: %s", resp.StatusCode, string(respBody))
+		return fmt.Errorf("resend API error: status %d body: %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
+func (m *ResendMailer) SendAccountActivation(user *model.User) error {
+	activationURL := fmt.Sprintf("https://%s/account_activations/%s/edit?email=%s",
+		m.AppHost, user.ActivationToken, url.QueryEscape(user.Email))
+
+	var htmlBuf bytes.Buffer
+	if err := components.AccountActivationHTML(user.Name, activationURL).Render(context.Background(), &htmlBuf); err != nil {
+		return fmt.Errorf("render html: %w", err)
+	}
+
+	return resendSend(m.APIKey, m.From, user.Email,
+		"Account activation", htmlBuf.String(),
+		fmt.Sprintf("Hi %s,\nActivate your account: %s", user.Name, activationURL))
+}
+
+func (m *ResendMailer) SendPasswordReset(user *model.User) error {
+	resetURL := fmt.Sprintf("https://%s/password_resets/%s/edit?email=%s",
+		m.AppHost, user.ResetToken, url.QueryEscape(user.Email))
+
+	var htmlBuf bytes.Buffer
+	if err := components.PasswordResetHTML(resetURL).Render(context.Background(), &htmlBuf); err != nil {
+		return fmt.Errorf("render html: %w", err)
+	}
+
+	return resendSend(m.APIKey, m.From, user.Email,
+		"Password reset", htmlBuf.String(),
+		fmt.Sprintf("Hi %s,\nReset your password: %s", user.Name, resetURL))
+}
+
+func (m *ResendMailer) SendFollowNotification(to *model.User, follower *model.User) error {
+	subject := follower.Name + " があなたをフォローしました"
+	body := follower.Name + " さんから新しいフォローがありました。"
+	return resendSend(m.APIKey, m.From, to.Email, subject, body, body)
+}
+
+func (m *ResendMailer) SendLikeNotification(to *model.User, liker *model.User, content string) error {
+	subject := liker.Name + " があなたの投稿をいいねしました"
+	body := liker.Name + " さんが「" + content + "」をいいねしました。"
+	return resendSend(m.APIKey, m.From, to.Email, subject, body, body)
+}
