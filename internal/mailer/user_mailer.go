@@ -358,8 +358,8 @@ func (m *ResendMailer) SendAccountActivation(user *model.User) error {
 	}
 
 	return resendSend(m.APIKey, m.From, user.Email,
-		"Account activation", htmlBuf.String(),
-		fmt.Sprintf("Hi %s,\nActivate your account: %s", user.Name, activationURL))
+		"【Chirp】アカウントの有効化", htmlBuf.String(),
+		fmt.Sprintf("%s さん、こんにちは。\n\nChirp へご登録いただきありがとうございます。\n以下のリンクをクリックしてアカウントを有効化してください：\n\n%s\n\nこのリンクは24時間有効です。", user.Name, activationURL))
 }
 
 func (m *ResendMailer) SendPasswordReset(user *model.User) error {
@@ -372,8 +372,8 @@ func (m *ResendMailer) SendPasswordReset(user *model.User) error {
 	}
 
 	return resendSend(m.APIKey, m.From, user.Email,
-		"Password reset", htmlBuf.String(),
-		fmt.Sprintf("Hi %s,\nReset your password: %s", user.Name, resetURL))
+		"【Chirp】パスワードのリセット", htmlBuf.String(),
+		fmt.Sprintf("%s さん、こんにちは。\n\n以下のリンクをクリックしてパスワードを再設定してください：\n\n%s\n\nこのリンクは2時間で無効になります。\nパスワードのリセットをご自身でリクエストしていない場合は、このメールを無視してください。", user.Name, resetURL))
 }
 
 func (m *ResendMailer) SendFollowNotification(to *model.User, follower *model.User) error {

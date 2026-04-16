@@ -29,7 +29,7 @@ func PasswordResetHTML(resetURL string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h1>Password reset</h1><p>To reset your password click the link below:</p><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<html><head><meta charset=\"UTF-8\"></head><body><h1>パスワードのリセット</h1><p>以下のリンクをクリックしてパスワードを再設定してください：</p><p><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -38,7 +38,7 @@ func PasswordResetHTML(resetURL string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\">Reset password</a><p>This link will expire in two hours.</p><p>If you did not request your password to be reset, please ignore this email and your password will stay as it is.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\">パスワードをリセットする</a></p><p>このリンクは2時間で無効になります。</p><p>パスワードのリセットをご自身でリクエストしていない場合は、このメールを無視してください。パスワードは変更されません。</p></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

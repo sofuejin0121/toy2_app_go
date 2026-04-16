@@ -13,10 +13,13 @@ type accountActivationComponent struct {
 func (c accountActivationComponent) Render(ctx context.Context, w io.Writer) error {
 	_, err := io.WriteString(w, `<!DOCTYPE html>
 <html>
+<head><meta charset="UTF-8"></head>
 <body>
-<p>Hi `+c.name+`,</p>
-<p>Click the link below to activate your account:</p>
-<p><a href="`+c.activationURL+`">Activate Account</a></p>
+<p>`+c.name+` さん、こんにちは。</p>
+<p>Chirp へご登録いただきありがとうございます。</p>
+<p>以下のリンクをクリックしてアカウントを有効化してください：</p>
+<p><a href="`+c.activationURL+`">アカウントを有効化する</a></p>
+<p>このリンクは24時間有効です。</p>
 </body>
 </html>`)
 	return err

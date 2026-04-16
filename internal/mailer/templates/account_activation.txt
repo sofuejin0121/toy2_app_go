@@ -1,5 +1,8 @@
-Hi {{.User.Name}},
+{{.User.Name}} さん、こんにちは。
 
-Welcome to the Sample App! Click on the link below to activate your account:
+Chirp へご登録いただきありがとうございます。
+以下のリンクをクリックしてアカウントを有効化してください：
 
 {{.ActivationURL}}
+
+このリンクは24時間有効です。
