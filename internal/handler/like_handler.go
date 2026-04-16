@@ -43,7 +43,7 @@ func (h *LikeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	cu := currentUser(r)
 	if cu == nil {
 		if isAJAX(r) {
-			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			http.Error(w, `{"error":"認証が必要です"}`, http.StatusUnauthorized)
 			return
 		}
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -52,7 +52,7 @@ func (h *LikeHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	micropostID, err := strconv.ParseInt(r.FormValue("micropost_id"), 10, 64)
 	if err != nil || micropostID == 0 {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(w, "不正なリクエストです", http.StatusBadRequest)
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *LikeHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 	cu := currentUser(r)
 	if cu == nil {
 		if isAJAX(r) {
-			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			http.Error(w, `{"error":"認証が必要です"}`, http.StatusUnauthorized)
 			return
 		}
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -102,7 +102,7 @@ func (h *LikeHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 
 	micropostID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || micropostID == 0 {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(w, "不正なリクエストです", http.StatusBadRequest)
 		return
 	}
 

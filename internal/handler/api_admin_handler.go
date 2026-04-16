@@ -12,12 +12,12 @@ import (
 func (h *APIHandler) AdminStats(w http.ResponseWriter, r *http.Request) {
 	cu := h.requireAuth(w, r)
 	if cu == nil || !cu.Admin {
-		writeError(w, http.StatusForbidden, "forbidden")
+		writeError(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 	stats, err := h.store.GetAdminStats()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	dailys := make([]map[string]any, len(stats.DailySignups))
@@ -40,7 +40,7 @@ func (h *APIHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	pref, err := h.store.GetOrCreateUserPreference(cu.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	writeJSON(w, http.StatusOK, SettingsJSON{
@@ -57,11 +57,11 @@ func (h *APIHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	var body SettingsJSON
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request")
+		writeError(w, http.StatusBadRequest, "リクエストが不正です")
 		return
 	}
 	if err := h.store.UpdateUserPreference(cu.ID, body.EmailOnFollow, body.EmailOnLike); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	writeJSON(w, http.StatusOK, body)
@@ -72,7 +72,7 @@ func ServeReact(distDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		indexPath := filepath.Join(distDir, "index.html")
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
-			http.Error(w, fmt.Sprintf("React build not found. Run: cd frontend && npm run build"), http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("Reactビルドが見つかりません。実行してください: cd frontend && npm run build"), http.StatusNotFound)
 			return
 		}
 		http.ServeFile(w, r, indexPath)

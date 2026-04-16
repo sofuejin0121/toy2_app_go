@@ -111,12 +111,12 @@ func (h *MicropostHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.store.CreateMicropost(micropost); err != nil {
 		log.Printf("CreateMicropost: %v", err)
-		setFlash(w, "danger", "Failed to create micropost")
+		setFlash(w, "danger", "投稿の作成に失敗しました")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	setFlash(w, "success", "Micropost created!")
+	setFlash(w, "success", "投稿を作成しました！")
 	// リプライの場合はリプライ元の詳細ページへ遷移 → 返信がぶら下がった状態で見える
 	if micropost.InReplyToID != nil {
 		http.Redirect(w, r, fmt.Sprintf("/microposts/%d", *micropost.InReplyToID), http.StatusSeeOther)
@@ -182,11 +182,11 @@ func (h *MicropostHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.store.DeleteMicropost(id); err != nil {
 		log.Printf("DeleteMicropost: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 
-	setFlash(w, "success", "Micropost deleted")
+	setFlash(w, "success", "投稿を削除しました")
 	ref := r.Header.Get("Referer")
 	if ref == "" {
 		ref = "/"
@@ -199,7 +199,7 @@ func (h *MicropostHandler) Index(w http.ResponseWriter, r *http.Request) {
 	microposts, err := h.store.AllMicroposts()
 	if err != nil {
 		log.Printf("AllMicroposts: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 	data := components.MicropostPageData{
@@ -220,17 +220,17 @@ func processImageUpload(r *http.Request, imageDir string) (string, []string) {
 	defer file.Close()
 
 	if header.Size > maxImageSize {
-		return "", []string{"Maximum file size is 5MB"}
+		return "", []string{"画像サイズは5MB以内にしてください"}
 	}
 
 	contentType := header.Header.Get("Content-Type")
 	if !allowedImageTypes[contentType] {
-		return "", []string{"Image must be JPEG, PNG, or GIF format"}
+		return "", []string{"画像はJPEG、PNG、またはGIF形式にしてください"}
 	}
 
 	_, _, err = image.DecodeConfig(file)
 	if err != nil {
-		return "", []string{"Invalid image file"}
+		return "", []string{"無効な画像ファイルです"}
 	}
 	if seeker, ok := file.(io.Seeker); ok {
 		_, _ = seeker.Seek(0, io.SeekStart)
@@ -244,12 +244,12 @@ func processImageUpload(r *http.Request, imageDir string) (string, []string) {
 
 	dst, err := os.Create(filepath.Join(imageDir, filename))
 	if err != nil {
-		return "", []string{"Failed to save image"}
+		return "", []string{"画像の保存に失敗しました"}
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, file); err != nil {
-		return "", []string{"Failed to save image"}
+		return "", []string{"画像の保存に失敗しました"}
 	}
 
 	return filename, nil

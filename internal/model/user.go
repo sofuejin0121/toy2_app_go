@@ -208,37 +208,37 @@ func (u *User) Validate() []string {
 	// 名前のバリデーション
 	// strings.TrimSpaceは文字列の両端の空白を削除します。
 	if strings.TrimSpace(u.Name) == "" {
-		errors = append(errors, "Name can't be blank")
+		errors = append(errors, "名前を入力してください")
 	}
 	// 名前の長さに制限をかける
 	if len(u.Name) > 50 {
-		errors = append(errors, "Name is too long (maximum is 50 characters)")
+		errors = append(errors, "名前は50文字以内で入力してください")
 	}
 	// bioの長さに制限をかける（160文字以内）
 	if len([]rune(u.Bio)) > 160 {
-		errors = append(errors, "Bio is too long (maximum is 160 characters)")
+		errors = append(errors, "自己紹介は160文字以内で入力してください")
 	}
 	// メールアドレスのバリデーション
 	if strings.TrimSpace(u.Email) == "" {
-		errors = append(errors, "Email can't be blank")
+		errors = append(errors, "メールアドレスを入力してください")
 	}
 	if len(u.Email) > 255 {
-		errors = append(errors, "Email is too long (maximum is 255 characters)")
+		errors = append(errors, "メールアドレスは255文字以内で入力してください")
 	}
 	if strings.TrimSpace(u.Email) != "" && !validEmailRegex.MatchString(u.Email) {
-		errors = append(errors, "Email is invalid")
+		errors = append(errors, "メールアドレスの形式が正しくありません")
 	}
 	// パスワードのバリデーション: 新規作成時(PasswordDigest)
 	// またはパスワード変更時(Password非空)のみ実行
 	if u.PasswordDigest == "" || u.Password != "" {
 		if strings.TrimSpace(u.Password) == "" {
-			errors = append(errors, "Password can't be blank")
+			errors = append(errors, "パスワードを入力してください")
 		}
 		if len(u.Password) < 8 {
-			errors = append(errors, "Password is too short (minimum is 8 characters)")
+			errors = append(errors, "パスワードは8文字以上で入力してください")
 		}
 		if u.Password != u.PasswordConfirmation {
-			errors = append(errors, "Password confirmation doesn't match")
+			errors = append(errors, "パスワード確認が一致しません")
 		}
 	}
 	return errors
@@ -247,10 +247,10 @@ func (u *User) Validate() []string {
 // ValidatePassword はパスワードの単体バリデーションを行う
 func ValidatePassword(password string) error {
 	if strings.TrimSpace(password) == "" {
-		return errors.New("Password can't be blank")
+		return errors.New("パスワードを入力してください")
 	}
 	if len(password) < 6 {
-		return errors.New("Password is too short (minimum is 6 characters)")
+		return errors.New("パスワードは6文字以上で入力してください")
 	}
 	return nil
 }

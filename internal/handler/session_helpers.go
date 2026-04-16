@@ -84,11 +84,11 @@ func RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !isLoggedIn(r) {
 			if strings.HasPrefix(r.URL.Path, "/api/") {
-				writeError(w, http.StatusUnauthorized, "unauthorized")
+				writeError(w, http.StatusUnauthorized, "認証が必要です")
 				return
 			}
 			storeLocation(w, r)
-			setFlash(w, "danger", "Please log in.")
+			setFlash(w, "danger", "ログインしてください。")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}

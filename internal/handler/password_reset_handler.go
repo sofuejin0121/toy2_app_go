@@ -74,7 +74,7 @@ func (h *PasswordResetHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil || user == nil {
 		data := components.PasswordResetPageData{
 			Title:       "Forgot password",
-			Flash:       map[string]string{"danger": "Email address not found"},
+			Flash:       map[string]string{"danger": "メールアドレスが見つかりません"},
 			CSRFToken:   middleware.CSRFTokenFromContext(r),
 			LoggedIn:    isLoggedIn(r),
 			CurrentUser: currentUser(r),
@@ -86,18 +86,18 @@ func (h *PasswordResetHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := user.CreateResetDigest(); err != nil {
 		log.Printf("CreateResetDigest: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 	if err := h.store.UpdateResetDigest(user.ID, user.ResetDigest, time.Now()); err != nil {
 		log.Printf("UpdateResetDigest: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 	if err := user.SendPasswordResetEmail(h.mailer); err != nil {
 		log.Printf("SendPasswordResetEmail: %v", err)
 	}
-	setFlash(w, "info", "Email sent with password reset instructions")
+	setFlash(w, "info", "パスワード再設定の手順をメールで送信しました")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -112,7 +112,7 @@ func (h *PasswordResetHandler) Edit(w http.ResponseWriter, r *http.Request) {
 	}
 	// 期限切れチェック
 	if user.PasswordResetExpired() {
-		setFlash(w, "danger", "Password reset has expired.")
+		setFlash(w, "danger", "パスワード再設定リンクの有効期限が切れています。")
 		http.Redirect(w, r, "/password_resets/new", http.StatusSeeOther)
 		return
 	}
@@ -147,7 +147,7 @@ func (h *PasswordResetHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	// （1）への対応: 期限切れチェック
 	if user.PasswordResetExpired() {
-		setFlash(w, "danger", "Password reset has expired.")
+		setFlash(w, "danger", "パスワード再設定リンクの有効期限が切れています。")
 		http.Redirect(w, r, "/password_resets/new", http.StatusSeeOther)
 		return
 	}
@@ -158,10 +158,10 @@ func (h *PasswordResetHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	// （3）への対応: 空パスワードのチェック
 	if password == "" {
-		errs = append(errs, "Password can't be empty")
+		errs = append(errs, "パスワードを入力してください")
 	}
 	if password != passwordConfirmation {
-		errs = append(errs, "Password confirmation doesn't match Password")
+		errs = append(errs, "パスワード確認が一致しません")
 	}
 	if password != "" {
 		if err := model.ValidatePassword(password); err != nil {
@@ -189,7 +189,7 @@ func (h *PasswordResetHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.store.UpdatePassword(user.ID, password); err != nil {
 		log.Printf("UpdatePassword(%d): %v", user.ID, err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 
@@ -201,6 +201,6 @@ func (h *PasswordResetHandler) Update(w http.ResponseWriter, r *http.Request) {
 	// 既存セッションをすべて無効化（セッションハイジャック対策）
 	_ = user.Forget(h.store)
 	logIn(w, user.ID, false, h.store)
-	setFlash(w, "success", "Password has been reset.")
+	setFlash(w, "success", "パスワードが再設定されました。")
 	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
 }

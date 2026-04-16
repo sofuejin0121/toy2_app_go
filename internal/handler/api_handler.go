@@ -108,7 +108,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 func (h *APIHandler) requireAuth(w http.ResponseWriter, r *http.Request) *model.User {
 	cu := currentUser(r)
 	if cu == nil {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		writeError(w, http.StatusUnauthorized, "認証が必要です")
 		return nil
 	}
 	return cu

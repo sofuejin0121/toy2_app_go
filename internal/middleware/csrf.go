@@ -22,10 +22,10 @@ func CSRF(next http.Handler) http.Handler {
 
 		if r.Method == "POST" || r.Method == "PATCH" || r.Method == "DELETE" {
 			formToken := r.FormValue("csrf_token")
-			if formToken != csrfToken {
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				return
-			}
+		if formToken != csrfToken {
+			http.Error(w, "アクセスが拒否されました", http.StatusForbidden)
+			return
+		}
 		}
 		next.ServeHTTP(w, r)
 	})

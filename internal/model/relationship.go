@@ -17,10 +17,10 @@ type Relationship struct {
 // Validate はRelationshipのバリデーションを実行する
 func (r *Relationship) Validate() error {
 	if r.FollowerID == 0 {
-		return errors.New("follower_id can't be blank")
+		return errors.New("フォロワーIDが空です")
 	}
 	if r.FollowedID == 0 {
-		return errors.New("followed_id can't be blank")
+		return errors.New("フォロー対象IDが空です")
 	}
 	return nil
 }

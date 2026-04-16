@@ -56,26 +56,26 @@ func (h *UserHandler) Index(w http.ResponseWriter, r *http.Request) {
 		users, err = h.store.SearchActivatedUsers(query, page, perPage)
 		if err != nil {
 			log.Printf("SearchActivatedUsers: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 			return
 		}
 		totalUsers, err = h.store.CountSearchActivatedUsers(query)
 		if err != nil {
 			log.Printf("CountSearchActivatedUsers: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 			return
 		}
 	} else {
 		users, err = h.store.GetActivatedUsers(page)
 		if err != nil {
 			log.Printf("GetActivatedUsers: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 			return
 		}
 		totalUsers, err = h.store.CountActivatedUsers()
 		if err != nil {
 			log.Printf("CountActivatedUsers: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -410,7 +410,7 @@ func (h *UserHandler) Edit(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(w, "不正なリクエストです", http.StatusBadRequest)
 		return
 	}
 
@@ -439,7 +439,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	// パスワードのハッシュ化と保存
 	if err := user.SetPassword(user.Password); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 	if err := h.store.CreateUser(&user); err != nil {
@@ -464,7 +464,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := user.SendActivationEmail(h.mailer); err != nil {
 		log.Printf("SendActivationEmail: %v", err)
 	}
-	setFlash(w, "success", "Welcome to the Sample App!")
+	setFlash(w, "success", "Chirpへようこそ！")
 	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
 }
 
@@ -492,7 +492,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	errs := user.Validate()
 	if password != "" {
 		if password != passwordConfirmation {
-			errs = append(errs, "Password confirmation doesn't match Password")
+			errs = append(errs, "パスワード確認が一致しません")
 		}
 		if err := model.ValidatePassword(password); err != nil {
 			errs = append(errs, err.Error())
@@ -516,17 +516,17 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if password != "" {
 		if err := h.store.UpdatePassword(id, password); err != nil {
 			log.Printf("UpdatePassword(%d): %v", id, err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 			return
 		}
 	}
 
 	if err := h.store.UpdateUser(user); err != nil {
 		log.Printf("UpdateUser: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
-	setFlash(w, "success", "Profile updated")
+	setFlash(w, "success", "プロフィールを更新しました")
 	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
 }
 
@@ -539,17 +539,17 @@ func (h *UserHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 	}
 	// 管理者が自分自身を削除することを防止
 	if isCurrentUser(r, id) {
-		setFlash(w, "danger", "Cannot delete own account")
+		setFlash(w, "danger", "自分のアカウントは削除できません")
 		http.Redirect(w, r, "/users", http.StatusSeeOther)
 		return
 	}
 	if err := h.store.DeleteUser(id); err != nil {
 		log.Printf("DeleteUser: %v", err)
-		http.Error(w, "Internal Server Error",
+		http.Error(w, "内部サーバーエラー",
 			http.StatusInternalServerError)
 		return
 	}
-	setFlash(w, "success", "User deleted")
+	setFlash(w, "success", "ユーザーを削除しました")
 	http.Redirect(w, r, "/users", http.StatusSeeOther)
 }
 

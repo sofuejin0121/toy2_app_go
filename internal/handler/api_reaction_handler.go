@@ -17,7 +17,7 @@ func (h *APIHandler) CreateRelationship(w http.ResponseWriter, r *http.Request) 
 		FollowedID int64 `json:"followed_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request")
+		writeError(w, http.StatusBadRequest, "リクエストが不正です")
 		return
 	}
 	if err := h.store.Follow(cu.ID, body.FollowedID); err != nil {
@@ -36,7 +36,7 @@ func (h *APIHandler) CreateRelationship(w http.ResponseWriter, r *http.Request) 
 		relID = rel.ID
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{
-		"message":         "followed",
+		"message":         "フォローしました",
 		"relationship_id": relID,
 	})
 }
@@ -49,18 +49,18 @@ func (h *APIHandler) DeleteRelationship(w http.ResponseWriter, r *http.Request) 
 	}
 	relID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "IDが不正です")
 		return
 	}
 	rel, err := h.store.GetRelationship(relID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	if err := h.store.Unfollow(cu.ID, rel.FollowedID); err != nil {
 		log.Printf("Unfollow: %v", err)
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "unfollowed"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "フォロー解除しました"})
 }
 
 // POST /api/likes
@@ -73,7 +73,7 @@ func (h *APIHandler) CreateLike(w http.ResponseWriter, r *http.Request) {
 		MicropostID int64 `json:"micropost_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request")
+		writeError(w, http.StatusBadRequest, "リクエストが不正です")
 		return
 	}
 	if err := h.store.Like(cu.ID, body.MicropostID); err != nil {
@@ -100,7 +100,7 @@ func (h *APIHandler) DeleteLike(w http.ResponseWriter, r *http.Request) {
 	}
 	micropostID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "IDが不正です")
 		return
 	}
 	if err := h.store.Unlike(cu.ID, micropostID); err != nil {
@@ -120,7 +120,7 @@ func (h *APIHandler) CreateBookmark(w http.ResponseWriter, r *http.Request) {
 		MicropostID int64 `json:"micropost_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request")
+		writeError(w, http.StatusBadRequest, "リクエストが不正です")
 		return
 	}
 	if err := h.store.Bookmark(cu.ID, body.MicropostID); err != nil {
@@ -137,7 +137,7 @@ func (h *APIHandler) DeleteBookmark(w http.ResponseWriter, r *http.Request) {
 	}
 	micropostID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "IDが不正です")
 		return
 	}
 	if err := h.store.UnBookmark(cu.ID, micropostID); err != nil {

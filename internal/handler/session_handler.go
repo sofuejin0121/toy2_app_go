@@ -41,7 +41,7 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         data := components.SessionPageData{
             Title:       "Log in",
-            Flash:       map[string]string{"danger": "Invalid email/password combination"},
+            Flash:       map[string]string{"danger": "メールアドレスまたはパスワードが正しくありません"},
             LoggedIn:    false,
             CurrentUser: nil,
             CSRFToken:   middleware.CSRFTokenFromContext(r),
@@ -53,7 +53,7 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
 
     // 有効化されていないユーザーはログインできない
     if !user.Activated {
-        setFlash(w, "warning", "Account not activated. Check your email for the activation link.")
+        setFlash(w, "warning", "アカウントが有効化されていません。メールの有効化リンクをご確認ください。")
         http.Redirect(w, r, "/", http.StatusSeeOther)
         return
     }

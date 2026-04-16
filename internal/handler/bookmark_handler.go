@@ -30,7 +30,7 @@ func (h *BookmarkHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	micropostID, err := strconv.ParseInt(r.FormValue("micropost_id"), 10, 64)
 	if err != nil || micropostID == 0 {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(w, "不正なリクエストです", http.StatusBadRequest)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *BookmarkHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 
 	micropostID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || micropostID == 0 {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(w, "不正なリクエストです", http.StatusBadRequest)
 		return
 	}
 

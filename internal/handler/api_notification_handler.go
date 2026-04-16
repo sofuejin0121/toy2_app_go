@@ -14,7 +14,7 @@ func (h *APIHandler) ListNotifications(w http.ResponseWriter, r *http.Request) {
 	}
 	items, err := h.store.GetNotifications(cu.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	h.store.MarkAllRead(cu.ID)
@@ -46,11 +46,11 @@ func (h *APIHandler) DeleteNotification(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "IDが不正です")
 		return
 	}
 	if err := h.store.DeleteNotification(id, cu.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "deleted"})

@@ -21,13 +21,13 @@ type Micropost struct {
 func (m *Micropost) Validate() []string {
 	var errors []string
 	if m.UserID == 0 {
-		errors = append(errors, "User must exist")
+		errors = append(errors, "ユーザーが存在しません")
 	}
 	if len([]rune(m.Content)) > 140 {
-		errors = append(errors, "Content is too long (maximum is 140 characters)")
+		errors = append(errors, "本文は140文字以内で入力してください")
 	}
 	if strings.TrimSpace(m.Content) == "" {
-		errors = append(errors, "Content can't be blank")
+		errors = append(errors, "本文を入力してください")
 	}
 	return errors
 }

@@ -30,7 +30,7 @@ func (h *RelationshipHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	followedID, err := strconv.ParseInt(r.FormValue("followed_id"), 10, 64)
 	if err != nil {
-		http.Error(w, "invalid followed_id", http.StatusBadRequest)
+		http.Error(w, "フォロー対象IDが不正です", http.StatusBadRequest)
 		return
 	}
 	if err := h.store.Follow(user.ID, followedID); err != nil {
@@ -58,12 +58,12 @@ func (h *RelationshipHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 	}
 	relationshipID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.Error(w, "invalid relationship id", http.StatusBadRequest)
+		http.Error(w, "リレーションシップIDが不正です", http.StatusBadRequest)
 		return
 	}
 	relationship, err := h.store.GetRelationship(relationshipID)
 	if err != nil {
-		http.Error(w, "relationship not found", http.StatusNotFound)
+		http.Error(w, "リレーションシップが見つかりません", http.StatusNotFound)
 		return
 	}
 	if err := h.store.Unfollow(user.ID, relationship.FollowedID); err != nil {

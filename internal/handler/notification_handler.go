@@ -34,7 +34,7 @@ func (h *NotificationHandler) Index(w http.ResponseWriter, r *http.Request) {
 	}
 	items, err := h.store.GetNotifications(cu.ID)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 	h.store.MarkAllRead(cu.ID)
@@ -63,9 +63,9 @@ func (h *NotificationHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.store.DeleteNotification(id, cu.ID); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
-	setFlash(w, "success", "Notification deleted")
+	setFlash(w, "success", "通知を削除しました")
 	http.Redirect(w, r, "/notifications", http.StatusSeeOther)
 }

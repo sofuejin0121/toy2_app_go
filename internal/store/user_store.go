@@ -177,7 +177,7 @@ func (s *Store) CreateUser(u *model.User) error {
 		// SQLiteは"UNIQUE constraint failed"というエラーを返す
 		// "Email has already been taken" に変換する。
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			return fmt.Errorf("Email has already been taken")
+			return fmt.Errorf("このメールアドレスはすでに使用されています")
 		}
 		return fmt.Errorf("create user: %w", err)
 	}

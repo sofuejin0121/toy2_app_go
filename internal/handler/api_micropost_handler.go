@@ -24,7 +24,7 @@ func (h *APIHandler) Feed(w http.ResponseWriter, r *http.Request) {
 	items, err := h.store.Feed(cu.ID, page, perPage)
 	if err != nil {
 		log.Printf("Feed: %v", err)
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	total, _ := h.store.CountMicropostsByUserID(cu.ID)
@@ -38,7 +38,7 @@ func (h *APIHandler) Feed(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) GetMicropost(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	cu := currentUser(r)
@@ -48,7 +48,7 @@ func (h *APIHandler) GetMicropost(w http.ResponseWriter, r *http.Request) {
 	}
 	post, err := h.store.GetMicropostAsFeedItem(id, viewerID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, http.StatusNotFound, "見つかりません")
 		return
 	}
 	replies, _ := h.store.GetReplies(id, viewerID)
@@ -87,7 +87,7 @@ func (h *APIHandler) CreateMicropost(w http.ResponseWriter, r *http.Request) {
 	}
 	micropost.ImagePath = imagePath
 	if err := h.store.CreateMicropost(micropost); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	post, err := h.store.GetMicropostAsFeedItem(micropost.ID, cu.ID)
@@ -106,12 +106,12 @@ func (h *APIHandler) DeleteMicropost(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "IDが不正です")
 		return
 	}
 	mp, err := h.store.GetMicropostByUserIDAndID(cu.ID, id)
 	if err != nil || mp == nil {
-		writeError(w, http.StatusForbidden, "forbidden")
+		writeError(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 	if mp.ImagePath != "" {
@@ -121,7 +121,7 @@ func (h *APIHandler) DeleteMicropost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := h.store.DeleteMicropost(id); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "内部エラーが発生しました")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "deleted"})
