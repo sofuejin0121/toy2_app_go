@@ -131,7 +131,7 @@ func Layout(title string, flash map[string]string, loggedIn bool, currentUser *m
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><script src=\"/static/js/menu.js\"></script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><script src=\"/static/js/menu.js\"></script><script src=\"/static/js/image_upload.js\"></script><script src=\"/static/js/micropost_counter.js\"></script><script src=\"/static/js/like.js\"></script><script src=\"/static/js/reply.js\"></script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

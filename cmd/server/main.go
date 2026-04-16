@@ -4,9 +4,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-
+	"path/filepath"
 
 	"github.com/sofuejin0121/toy_app_go/internal/handler"
+	"github.com/sofuejin0121/toy_app_go/internal/mailer"
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
 	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
@@ -16,62 +17,133 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	var m mailer.Mailer
+	if os.Getenv("GO_ENV") == "production" {
+		m = &mailer.SMTPMailer{
+			Host:     os.Getenv("SMTP_HOST"),
+			Port:     587,
+			Username: os.Getenv("SMTP_USERNAME"),
+			Password: os.Getenv("SMTP_PASSWORD"),
+			From:     os.Getenv("MAILER_FROM"),
+			AppHost:  os.Getenv("APP_HOST"),
+		}
+	} else {
+		m = &mailer.LogMailer{
+			From: mailer.DefaultFrom,
+			Host: "localhost:" + port,
+		}
+	}
 
-	s, err := store.New("db/toy.db")
+	dbPath := os.Getenv("DATABASE_URL")
+	if dbPath == "" {
+		dbPath = "db/toy.db"
+	}
+	s, err := store.New(dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer s.Close()
 
-	userHandler := handler.NewUserHandler(s)
+	userHandler := handler.NewUserHandler(s, m)
 	sessionHandler := handler.NewSessionHandler(s)
-	micropostHandler := handler.NewMicropostHandler(s)
-
-	// StaticPagesハンドラーを作成
-	staticHandler := handler.NewStaticHandler()
+	staticHandler := handler.NewStaticHandler(s)
+	accountActivationHandler := handler.NewAccountActivationHandler(s)
+	passwordResetHandler := handler.NewPasswordResetHandler(s, m)
+	imageDir := filepath.Join("web", "static", "images", "microposts")
+	micropostHandler := handler.NewMicropostHandler(s, imageDir)
+	relationshipHandler := handler.NewRelationshipHandler(s, m)
+	likeHandler := handler.NewLikeHandler(s, m)
+	userPreferenceHandler := handler.NewUserPreferenceHandler(s, m)
+	notificationHandler := handler.NewNotificationHandler(s)
+	adminHandler := handler.NewAdminHandler(s)
+	bookmarkHandler := handler.NewBookmarkHandler(s)
 
 	mux := http.NewServeMux()
 
-	// Micropostsリソース
-	mux.HandleFunc("GET /microposts", micropostHandler.Index)
-	mux.HandleFunc("GET /microposts/new", micropostHandler.New)
-	mux.HandleFunc("GET /microposts/{id}", micropostHandler.Show)
-	mux.HandleFunc("GET /microposts/{id}/edit", micropostHandler.Edit)
-	mux.HandleFunc("POST /microposts", micropostHandler.Create)
-	mux.HandleFunc("PATCH /microposts/{id}", micropostHandler.Update)
-	mux.HandleFunc("DELETE /microposts/{id}", micropostHandler.Destroy)
-
-	// Usersリソース
-	mux.HandleFunc("GET /users", userHandler.RequireLogin(userHandler.Index)) // ユーザー一覧ページ表示
-	mux.HandleFunc("GET /users/new", userHandler.New) // ユーザー新規作成するページ
-	mux.HandleFunc("GET /users/{id}", userHandler.Show) // 特定のユーザーを表示するページ
-	mux.HandleFunc("GET /users/{id}/edit", userHandler.RequireLogin(userHandler.RequireCorrectUser(userHandler.Edit))) // 特定のユーザーを編集するページ
-	mux.HandleFunc("POST /users", userHandler.Create) // ユーザーを作成する
-	mux.HandleFunc("PATCH /users/{id}", userHandler.RequireLogin(userHandler.RequireCorrectUser(userHandler.Update))) // 特定のユーザーを更新する
-	mux.HandleFunc("DELETE /users/{id}", userHandler.RequireLogin(userHandler.RequireAdmin(userHandler.Destroy))) // 特定のユーザーを削除する
-
-	// StaticPages用ルーティング
+	// 静的ページ
 	mux.HandleFunc("GET /{$}", staticHandler.Home)
 	mux.HandleFunc("GET /help", staticHandler.Help)
 	mux.HandleFunc("GET /about", staticHandler.About)
 	mux.HandleFunc("GET /contact", staticHandler.Contact)
+
+	// ユーザー
 	mux.HandleFunc("GET /signup", userHandler.New)
+	mux.HandleFunc("POST /users", userHandler.Create)
+	mux.HandleFunc("GET /users", handler.RequireLogin(userHandler.Index))
+	mux.HandleFunc("GET /users/{id}", userHandler.Show)
+	mux.HandleFunc("GET /users/{id}/edit",
+		handler.RequireLogin(userHandler.RequireCorrectUser(userHandler.Edit)))
+	mux.HandleFunc("PATCH /users/{id}",
+		handler.RequireLogin(userHandler.RequireCorrectUser(userHandler.Update)))
+	mux.HandleFunc("DELETE /users/{id}",
+		handler.RequireLogin(userHandler.RequireAdmin(userHandler.Destroy)))
+	mux.HandleFunc("GET /users/{id}/following",
+		handler.RequireLogin(userHandler.Following))
+	mux.HandleFunc("GET /users/{id}/followers",
+		handler.RequireLogin(userHandler.Followers))
+	mux.HandleFunc("GET /users/{id}/likes",
+		handler.RequireLogin(userHandler.LikedPosts))
+	mux.HandleFunc("GET /users/{id}/bookmarks",
+		handler.RequireLogin(userHandler.BookmarkedPosts))
 
 	// セッション
 	mux.HandleFunc("GET /login", sessionHandler.New)
 	mux.HandleFunc("POST /login", sessionHandler.Create)
 	mux.HandleFunc("DELETE /logout", sessionHandler.Destroy)
 
-	// Users用ルーティング
+	// アカウント有効化
+	mux.HandleFunc("GET /account_activation/{id}/edit", accountActivationHandler.Edit)
+
+	// パスワード再設定
+	mux.HandleFunc("GET /password_resets/new", passwordResetHandler.New)
+	mux.HandleFunc("POST /password_resets", passwordResetHandler.Create)
+	mux.HandleFunc("GET /password_resets/{id}/edit", passwordResetHandler.Edit)
+	mux.HandleFunc("PATCH /password_resets/{id}", passwordResetHandler.Update)
+
+	// マイクロポスト
+	mux.HandleFunc("POST /microposts",
+		handler.RequireLogin(micropostHandler.Create))
+	mux.HandleFunc("GET /microposts/{id}", micropostHandler.Show)
+	mux.HandleFunc("DELETE /microposts/{id}",
+		handler.RequireLogin(
+			micropostHandler.RequireCorrectUser(micropostHandler.Destroy)))
+	mux.HandleFunc("GET /microposts", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
+	// リレーションシップ
+	mux.HandleFunc("POST /relationships",
+		handler.RequireLogin(relationshipHandler.Create))
+	mux.HandleFunc("DELETE /relationships/{id}",
+		handler.RequireLogin(relationshipHandler.Destroy))
+
+	// いいね: POST /likes でいいね作成、DELETE /likes/{micropost_id} でいいね解除
+	mux.HandleFunc("POST /likes",
+		handler.RequireLogin(likeHandler.Create))
+	mux.HandleFunc("DELETE /likes/{id}",
+		handler.RequireLogin(likeHandler.Destroy))
+
+	// ブックマーク
+	mux.HandleFunc("POST /bookmarks",
+		handler.RequireLogin(bookmarkHandler.Create))
+	mux.HandleFunc("DELETE /bookmarks/{id}",
+		handler.RequireLogin(bookmarkHandler.Destroy))
+	mux.HandleFunc("GET /notifications", handler.RequireLogin(notificationHandler.Index))
+	mux.HandleFunc("GET /admin", handler.RequireLogin(userHandler.RequireAdmin(adminHandler.Index)))
+
+	// 通知設定
+	mux.HandleFunc("GET /settings", handler.RequireLogin(userPreferenceHandler.Edit))
+	mux.HandleFunc("PATCH /settings", handler.RequireLogin(userPreferenceHandler.Update))
+	mux.HandleFunc("DELETE /notifications/{id}", handler.RequireLogin(notificationHandler.Destroy))
 
 	fs := http.FileServer(http.Dir("web/static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// ミドルウェアチェーン　Auth → MethodOverride →　ServeMux
-	h := middleware.Auth(s)(
-		middleware.MethodOverride(mux),
-	)
-	
+	// Flash → Auth → MethodOverride の順で適用
+	// Flash を先に挟むことで、リクエストごとに flash Cookie を読み取った後に削除し
+	// フラッシュメッセージが次のリクエストに持ち越されないようにする
+	h := middleware.Flash(middleware.Auth(s)(middleware.MethodOverride(mux)))
+
 	log.Printf("Starting server on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, h))
 }

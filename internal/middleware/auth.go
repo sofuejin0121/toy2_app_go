@@ -55,7 +55,7 @@ func Auth(s *store.Store) func(http.Handler) http.Handler {
                     user, err := s.GetUser(userID)
                     rememberToken := GetCookieValue(r, "remember_token")
                     if err == nil && rememberToken != "" &&
-                        user.Authenticated(rememberToken) {
+                        user.Authenticated("remember",rememberToken) {
                         ClearSessionCookie(w)
                         SetSessionValue(w, "user_id",
                             strconv.FormatInt(userID, 10))

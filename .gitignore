@@ -1,0 +1,11 @@
+# 環境変数（認証情報）
+.env
+
+# データベース
+db/*.db
+
+# バイナリ
+/toy_app2
+
+# Go生成ファイル（任意）
+# web/components/*_templ.go

@@ -1,17 +1,29 @@
 package components
 
 import (
+	"fmt"
+
 	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
+
 // StaticPageData は静的ページに共通のテンプレートデータです。
 type StaticPageData struct {
-	Title       string
-	Flash       map[string]string
-	LoggedIn    bool
-	CurrentUser *model.User
-	CSRFToken   string
-	Debug       bool
-	DebugInfo   string
+	Title          string
+	Flash          map[string]string
+	LoggedIn       bool
+	CurrentUser    *model.User
+	CSRFToken      string
+	Debug          bool
+	DebugInfo      string
+	Errors         []string
+	Micropost      *model.Micropost
+	Microposts     []store.FeedItem
+	MicropostCount int
+	Pagination     Pagination
+	FollowingCount int
+	FollowersCount int
+	LikedCount     int
 }
 
 // HomePage はHomeページのコンポーネントです。
@@ -19,11 +31,109 @@ templ HomePage() {
 	@StaticHome(StaticPageData{})
 }
 
+// HelpPage はHelpページのコンポーネントです。
+templ HelpPage() {
+	@StaticHelp(StaticPageData{Title: "Help"})
+}
+
+// AboutPage はAboutページのコンポーネントです。
+templ AboutPage() {
+	@StaticAbout(StaticPageData{Title: "About"})
+}
+
+// ContactPage はContactページのコンポーネントです。
+templ ContactPage() {
+	@StaticContact(StaticPageData{Title: "Contact"})
+}
+
 // StaticHome はHomeページのコンポーネントです。
 templ StaticHome(data StaticPageData) {
 	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		if data.LoggedIn && data.CurrentUser != nil {
-			// 第13章以降のログイン済みHome表示はそのまま残します。
+			<div class="row">
+				<aside class="col-md-4">
+					<section class="user_info">
+						<img src={ gravatarURL(data.CurrentUser.Name, 50) } alt={ data.CurrentUser.Name } class="gravatar"/>
+						<h1>{ data.CurrentUser.Name }</h1>
+						<span><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.CurrentUser.ID)) }>view my profile</a></span>
+						<span>{ fmt.Sprint(data.MicropostCount) } microposts</span>
+					</section>
+				<section class="stats">
+					<div class="stats">
+						<a href={ templ.SafeURL(fmt.Sprintf("/users/%d/following", data.CurrentUser.ID)) }>
+							<strong id="following" class="stat">{ fmt.Sprint(data.FollowingCount) }</strong>
+							following
+						</a>
+						<a href={ templ.SafeURL(fmt.Sprintf("/users/%d/followers", data.CurrentUser.ID)) }>
+							<strong id="followers" class="stat">{ fmt.Sprint(data.FollowersCount) }</strong>
+							followers
+						</a>
+						<a href={ templ.SafeURL(fmt.Sprintf("/users/%d/likes", data.CurrentUser.ID)) }>
+							<strong id="likes" class="stat">{ fmt.Sprint(data.LikedCount) }</strong>
+							likes
+						</a>
+					</div>
+				</section>
+					<section class="micropost_form">
+						<form action="/microposts" method="POST" enctype="multipart/form-data">
+							<input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
+							<div class="field">
+								<textarea name="content" placeholder="Compose new micropost..."></textarea>
+								<div class="micropost-counter-row">
+									<span class="micropost-counter">0/140</span>
+								</div>
+							</div>
+							<span class="image">
+								<input type="file" name="image" accept="image/jpeg,image/gif,image/png"/>
+							</span>
+							<input type="submit" value="Post" class="btn btn-primary"/>
+						</form>
+					</section>
+				</aside>
+				<div class="col-md-8">
+					<h3>Micropost Feed</h3>
+					if len(data.Microposts) > 0 {
+						<ol class="microposts">
+							for _, item := range data.Microposts {
+								<li id={ fmt.Sprintf("micropost-%d", item.Micropost.ID) }>
+									<a href={ templ.SafeURL(fmt.Sprintf("/users/%d", item.User.ID)) }>
+										<img src={ gravatarURL(item.User.Name, 50) } alt={ item.User.Name } class="gravatar"/>
+									</a>
+									<span class="user">
+										<a href={ templ.SafeURL(fmt.Sprintf("/users/%d", item.User.ID)) }>{ item.User.Name }</a>
+									</span>
+									if item.ParentMicropost != nil && item.ParentUser != nil {
+										@QuotedPost(item.ParentMicropost, item.ParentUser)
+									}
+									<span class="content">
+										<a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d", item.Micropost.ID)) } class="micropost-link">
+											{ item.Micropost.Content }
+										</a>
+										if item.Micropost.ImagePath != "" {
+											<img src={ "/static/images/microposts/" + item.Micropost.ImagePath } alt="Micropost image" class="micropost-image"/>
+										}
+									</span>
+									<span class="timestamp">
+										Posted { timeAgoInWords(item.Micropost.CreatedAt) } ago.
+										@LikeButton(item, data.CSRFToken, data.CurrentUser)
+										@BookmarkButton(item, data.CSRFToken, data.CurrentUser)
+										@ReplyButton(item.Micropost.ID, data.CurrentUser)
+										if data.CurrentUser != nil && data.CurrentUser.ID == item.Micropost.UserID {
+											<form action={ templ.SafeURL(fmt.Sprintf("/microposts/%d", item.Micropost.ID)) } method="POST" style="display:inline" onsubmit="return confirm('You sure?');">
+												<input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
+												<input type="hidden" name="_method" value="DELETE"/>
+												<button type="submit" class="btn-delete">delete</button>
+											</form>
+										}
+									</span>
+									@ReplyForm(item.Micropost.ID, data.CSRFToken, data.CurrentUser, false)
+								</li>
+							}
+						</ol>
+						@PaginationNav(data.Pagination, "/")
+					}
+				</div>
+			</div>
 		} else {
 			<div class="center jumbotron">
 				<h1>Welcome to the Sample App</h1>
@@ -41,11 +151,6 @@ templ StaticHome(data StaticPageData) {
 	}
 }
 
-// HelpPage はHelpページのコンポーネントです。
-templ HelpPage() {
-	@StaticHelp(StaticPageData{Title: "Help"})
-}
-
 // StaticHelp はHelpページのコンポーネントです。
 templ StaticHelp(data StaticPageData) {
 	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
@@ -58,11 +163,6 @@ templ StaticHelp(data StaticPageData) {
 			book</a>.
 		</p>
 	}
-}
-
-// AboutPage はAboutページのコンポーネントです。
-templ AboutPage() {
-	@StaticAbout(StaticPageData{Title: "About"})
 }
 
 // StaticAbout はAboutページのコンポーネントです。
@@ -78,11 +178,6 @@ templ StaticAbout(data StaticPageData) {
 			This is the sample application for the tutorial.
 		</p>
 	}
-}
-
-// ContactPage はContactページのコンポーネントです。
-templ ContactPage() {
-	@StaticContact(StaticPageData{Title: "Contact"})
 }
 
 // StaticContact はContactページのコンポーネントです。

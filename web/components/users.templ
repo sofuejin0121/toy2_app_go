@@ -2,35 +2,45 @@ package components
 
 import (
 	"fmt"
-	"crypto/md5"
-	"strings"
+	"net/url"
 
 	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
 
-// gravatarURL はメールアドレスのGravatar画像URLを返す
-func gravatarURL(email string, size int) string {
-    hash := md5.Sum([]byte(strings.ToLower(strings.TrimSpace(email))))
-    return fmt.Sprintf(
-        "https://secure.gravatar.com/avatar/%x?s=%d",
-        hash, size)
+// gravatarURL はユーザー名から UI Avatars のイニシャルアイコン URL を返す
+func gravatarURL(name string, size int) string {
+	encoded := url.QueryEscape(name)
+	return fmt.Sprintf(
+		"https://ui-avatars.com/api/?name=%s&size=%d&background=random&color=fff&rounded=true&bold=true",
+		encoded, size)
 }
 
 type UserPageData struct {
-	Title       string
-	Notice      string
-	Flash       map[string]string
-	LoggedIn    bool
-	CurrentUser *model.User
-	CSRFToken   string
-	Debug       bool
-	DebugInfo   string
-	User        model.User
-	Users       []model.User
-	Errors      []string
-	Action      string
-	SubmitLabel string
-	Pagination  Pagination
+	Title          string
+	Notice         string
+	Flash          map[string]string
+	LoggedIn       bool
+	CurrentUser    *model.User
+	CSRFToken      string
+	Debug          bool
+	DebugInfo      string
+	User           model.User
+	Users          []model.User
+	Errors         []string
+	Action         string
+	SubmitLabel    string
+	Microposts     []store.FeedItem
+	MicropostCount int
+	Pagination     Pagination
+	FollowingCount int
+	FollowersCount int
+	IsCurrentUser  bool
+	IsFollowing    bool
+	RelationshipID int64
+	SearchQuery    string
+	LikedCount     int
+	BookmarkCount  int
 }
 
 templ UserErrorMessages(errors []string) {
@@ -71,6 +81,13 @@ templ UserForm(data UserPageData) {
         <input type="email" name="email" id="user_email"
                class="form-control" value={ data.User.Email }/>
 
+        if isEdit {
+            <label for="user_bio">Bio</label>
+            <textarea name="bio" id="user_bio" class="form-control"
+                      placeholder="Tell us about yourself (max 160 characters)"
+                      maxlength="160">{ data.User.Bio }</textarea>
+        }
+
         <label for="user_password">Password</label>
         <input type="password" name="password" id="user_password"
                class="form-control"/>
@@ -84,16 +101,37 @@ templ UserForm(data UserPageData) {
     </form>
 }
 
-templ UserIndex(data UserPageData) {
+// UserIndex はユーザー一覧ページ。paginationBase はページネーションのベースURL。
+// 検索時は "/users?q=<query>" を渡すことでページ遷移時もクエリを保持する。
+templ UserIndex(data UserPageData, paginationBase string) {
     @Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
         <h1>All users</h1>
 
-        @PaginationNav(data.Pagination, "/users")
+        // 検索フォーム: GET /users?q=... でサーバーに送信
+        <form action="/users" method="GET" class="user-search-form">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control"
+                       placeholder="Search by name or email..."
+                       value={ data.SearchQuery }/>
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-default">Search</button>
+                </span>
+            </div>
+        </form>
+
+        if data.SearchQuery != "" {
+            <p class="search-result-info">
+                Search results for "{ data.SearchQuery }"
+                — <a href="/users">clear</a>
+            </p>
+        }
+
+        @PaginationNav(data.Pagination, paginationBase)
 
         <ul class="users">
             for _, user := range data.Users {
                 <li>
-                    <img src={ gravatarURL(user.Email, 50) } alt={ user.Name } class="gravatar"/>
+                    <img src={ gravatarURL(user.Name, 50) } alt={ user.Name } class="gravatar"/>
                     <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", user.ID)) }>{ user.Name }</a>
                     if data.CurrentUser != nil && data.CurrentUser.Admin && user.ID != data.CurrentUser.ID {
                         | <form action={ templ.SafeURL(fmt.Sprintf("/users/%d", user.ID)) } method="POST" style="display:inline;"
@@ -107,19 +145,89 @@ templ UserIndex(data UserPageData) {
             }
         </ul>
 
-        @PaginationNav(data.Pagination, "/users")
+        @PaginationNav(data.Pagination, paginationBase)
     }
 }
+
+// UserStats はフォロー統計情報を表示するコンポーネント
+templ UserStats(data UserPageData) {
+    <div class="stats">
+        <a href={ templ.SafeURL(fmt.Sprintf("/users/%d/following", data.User.ID)) }>
+            <strong id="following" class="stat">
+                { fmt.Sprint(data.FollowingCount) }
+            </strong>
+            following
+        </a>
+        <a href={ templ.SafeURL(fmt.Sprintf("/users/%d/followers", data.User.ID)) }>
+            <strong id="followers" class="stat">
+                { fmt.Sprint(data.FollowersCount) }
+            </strong>
+            followers
+        </a>
+        <a href={ templ.SafeURL(fmt.Sprintf("/users/%d/likes", data.User.ID)) }>
+            <strong id="likes" class="stat">
+                { fmt.Sprint(data.LikedCount) }
+            </strong>
+            likes
+        </a>
+        if data.IsCurrentUser {
+            <a href={ templ.SafeURL(fmt.Sprintf("/users/%d/bookmarks", data.User.ID)) }>
+                <strong id="bookmarks" class="stat">
+                    { fmt.Sprint(data.BookmarkCount) }
+                </strong>
+                bookmarks
+            </a>
+        }
+    </div>
+}
+
+// FollowForm はフォロー/フォロー解除フォームのコンポーネント
+templ FollowForm(data UserPageData) {
+    if !data.IsCurrentUser {
+        <div id="follow_form">
+            if data.IsFollowing {
+                @Unfollow(data)
+            } else {
+                @Follow(data)
+            }
+        </div>
+    }
+}
+
+// Follow はユーザーをフォローするフォーム
+templ Follow(data UserPageData) {
+    <form action="/relationships" method="POST">
+        <input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
+        <input type="hidden" name="followed_id" value={ fmt.Sprintf("%d", data.User.ID) }/>
+        <input type="submit" value="Follow" class="btn btn-primary"/>
+    </form>
+}
+
+// Unfollow はユーザーをフォロー解除するフォーム
+templ Unfollow(data UserPageData) {
+    <form action={ templ.SafeURL(fmt.Sprintf("/relationships/%d", data.RelationshipID)) } method="POST">
+        <input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
+        <input type="hidden" name="_method" value="DELETE"/>
+        <input type="submit" value="Unfollow" class="btn"/>
+    </form>
+}
+
 // UserShow はユーザー情報を表示するコンポーネント
 templ UserShow(data UserPageData) {
 	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
 		<div class="row">
 			<aside class="col-md-4">
-				<section class="user_info">
+				<section>
 					<h1>
-						<img src={ gravatarURL(data.User.Email, 80) } alt={ data.User.Name } class="gravatar"/>
+						<img src={ gravatarURL(data.User.Name, 80) } alt={ data.User.Name } class="gravatar"/>
 						{ data.User.Name }
 					</h1>
+					if data.User.Bio != "" {
+						<p class="user-bio">{ data.User.Bio }</p>
+					}
+				</section>
+				<section class="stats">
+					@UserStats(data)
 				</section>
 				if data.LoggedIn && data.CurrentUser != nil && data.CurrentUser.ID == data.User.ID {
 					<section class="user_actions">
@@ -127,6 +235,46 @@ templ UserShow(data UserPageData) {
 					</section>
 				}
 			</aside>
+			<div class="col-md-8">
+				if data.LoggedIn {
+					@FollowForm(data)
+				}
+		if len(data.Microposts) > 0 {
+			<h3>{ fmt.Sprintf("Microposts (%d)", data.MicropostCount) }</h3>
+			<ol class="microposts">
+				for _, item := range data.Microposts {
+					<li id={ fmt.Sprintf("micropost-%d", item.Micropost.ID) }>
+						if item.ParentMicropost != nil && item.ParentUser != nil {
+							@QuotedPost(item.ParentMicropost, item.ParentUser)
+						}
+						<span class="content">
+							<a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d", item.Micropost.ID)) } class="micropost-link">
+								{ item.Micropost.Content }
+							</a>
+							if item.Micropost.ImagePath != "" {
+								<img src={ "/static/images/microposts/" + item.Micropost.ImagePath } alt="Micropost image" class="micropost-image"/>
+							}
+						</span>
+						<span class="timestamp">
+							Posted { timeAgoInWords(item.Micropost.CreatedAt) } ago.
+							@LikeButton(item, data.CSRFToken, data.CurrentUser)
+							@BookmarkButton(item, data.CSRFToken, data.CurrentUser)
+							@ReplyButton(item.Micropost.ID, data.CurrentUser)
+							if data.CurrentUser != nil && data.CurrentUser.ID == item.Micropost.UserID {
+								<form action={ templ.SafeURL(fmt.Sprintf("/microposts/%d", item.Micropost.ID)) } method="POST" style="display:inline" onsubmit="return confirm('You sure?');">
+									<input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
+									<input type="hidden" name="_method" value="DELETE"/>
+									<button type="submit" class="btn-delete">delete</button>
+								</form>
+							}
+						</span>
+						@ReplyForm(item.Micropost.ID, data.CSRFToken, data.CurrentUser, false)
+					</li>
+				}
+			</ol>
+			@PaginationNav(data.Pagination, fmt.Sprintf("/users/%d", data.User.ID))
+		}
+			</div>
 		</div>
 	}
 }
@@ -150,7 +298,7 @@ templ UserEdit(data UserPageData) {
             <div class="col-md-6 col-md-offset-3">
                 @UserForm(data)
                 <div class="gravatar_edit">
-                    <img src={ gravatarURL(data.User.Email, 80) } alt={ data.User.Name } class="gravatar"/>
+                    <img src={ gravatarURL(data.User.Name, 80) } alt={ data.User.Name } class="gravatar"/>
                     <a href="https://gravatar.com/emails" target="_blank" rel="noopener">Change</a>
                 </div>
             </div>
@@ -160,7 +308,364 @@ templ UserEdit(data UserPageData) {
 
 templ UserItem(user model.User) {
     <li>
-        <img src={ gravatarURL(user.Email, 50) } alt={ user.Name } class="gravatar"/>
+        <img src={ gravatarURL(user.Name, 50) } alt={ user.Name } class="gravatar"/>
         <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", user.ID)) }>{ user.Name }</a>
     </li>
+}
+
+// ShowFollow はfollowing/followersページのコンポーネント
+templ ShowFollow(data UserPageData) {
+    @Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+        <div class="row">
+            <aside class="col-md-4">
+                <section class="user_info">
+                    <img src={ gravatarURL(data.User.Name, 50) } alt={ data.User.Name } class="gravatar"/>
+                    <h1>{ data.User.Name }</h1>
+                    <span><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.User.ID)) }>view my profile</a></span>
+                    <span><strong>Microposts:</strong> { fmt.Sprint(data.MicropostCount) }</span>
+                </section>
+                <section class="stats">
+                    @UserStats(data)
+                    if len(data.Users) > 0 {
+                        <div class="user_avatars">
+                            for _, user := range data.Users {
+                                <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", user.ID)) }>
+                                    <img src={ gravatarURL(user.Name, 30) } alt={ user.Name } class="gravatar"/>
+                                </a>
+                            }
+                        </div>
+                    }
+                </section>
+            </aside>
+            <div class="col-md-8">
+                <h3>{ data.Title }</h3>
+                if len(data.Users) > 0 {
+                    <ul class="users follow">
+                        for _, user := range data.Users {
+                            <li>
+                                <img src={ gravatarURL(user.Name, 50) } alt={ user.Name } class="gravatar"/>
+                                <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", user.ID)) }>{ user.Name }</a>
+                            </li>
+                        }
+                    </ul>
+                    @PaginationNav(data.Pagination, fmt.Sprintf("/users/%d/following", data.User.ID))
+                }
+            </div>
+        </div>
+    }
+}
+
+// ShowLikes はユーザーがいいねした投稿一覧ページ。
+// data.Microposts に PaginateLikedMicropostsAsFeedItems の結果を渡す。
+templ ShowLikes(data UserPageData) {
+    @Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+        <div class="row">
+            <aside class="col-md-4">
+                <section class="user_info">
+                    <img src={ gravatarURL(data.User.Name, 80) } alt={ data.User.Name } class="gravatar"/>
+                    <h1>{ data.User.Name }</h1>
+                    <span><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.User.ID)) }>view profile</a></span>
+                    <span><strong>Microposts:</strong> { fmt.Sprint(data.MicropostCount) }</span>
+                </section>
+                <section class="stats">
+                    @UserStats(data)
+                </section>
+            </aside>
+            <div class="col-md-8">
+                <h3>{ data.Title }</h3>
+                if len(data.Microposts) > 0 {
+                    <ol class="microposts">
+                        for _, item := range data.Microposts {
+                            <li id={ fmt.Sprintf("micropost-%d", item.Micropost.ID) }>
+                                <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", item.User.ID)) }>
+                                    <img src={ gravatarURL(item.User.Name, 50) } alt={ item.User.Name } class="gravatar"/>
+                                </a>
+                                <span class="user">
+                                    <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", item.User.ID)) }>{ item.User.Name }</a>
+                                </span>
+                                if item.ParentMicropost != nil && item.ParentUser != nil {
+                                    @QuotedPost(item.ParentMicropost, item.ParentUser)
+                                }
+                                <span class="content">
+                                    { item.Micropost.Content }
+                                    if item.Micropost.ImagePath != "" {
+                                        <img src={ "/static/images/microposts/" + item.Micropost.ImagePath } alt="Micropost image" class="micropost-image"/>
+                                    }
+                                </span>
+                                <span class="timestamp">
+                                    Posted { timeAgoInWords(item.Micropost.CreatedAt) } ago.
+                                    @LikeButton(item, data.CSRFToken, data.CurrentUser)
+                                    @BookmarkButton(item, data.CSRFToken, data.CurrentUser)
+                                    @ReplyButton(item.Micropost.ID, data.CurrentUser)
+                                </span>
+                                @ReplyForm(item.Micropost.ID, data.CSRFToken, data.CurrentUser, false)
+                            </li>
+                        }
+                    </ol>
+                    @PaginationNav(data.Pagination, fmt.Sprintf("/users/%d/likes", data.User.ID))
+                } else {
+                    <p class="no-liked-posts">まだいいねした投稿がありません。</p>
+                }
+            </div>
+        </div>
+    }
+}
+
+// LikeButton はいいねカウントといいね/いいね解除フォームを表示する。
+// data-micropost-id / data-liked 属性を付与し、like.js が AJAX でリロードなく更新する。
+// ログインしていない場合はカウントのみを表示する。
+templ LikeButton(item store.FeedItem, csrfToken string, currentUser *model.User) {
+    <span class="like-info" data-micropost-id={ fmt.Sprint(item.Micropost.ID) }>
+        <span class="like-count" id={ "like-count-" + fmt.Sprint(item.Micropost.ID) }>♥ { fmt.Sprint(item.LikeCount) }</span>
+        if currentUser != nil {
+            if item.IsLiked {
+                <form class="like-form"
+                      action={ templ.SafeURL(fmt.Sprintf("/likes/%d", item.Micropost.ID)) }
+                      method="POST" style="display:inline"
+                      data-micropost-id={ fmt.Sprint(item.Micropost.ID) }
+                      data-liked="true">
+                    <input type="hidden" name="csrf_token" value={ csrfToken }/>
+                    <input type="hidden" name="_method" value="DELETE"/>
+                    <button type="submit" class="btn-like btn-like--active" title="Unlike">♥</button>
+                </form>
+            } else {
+                <form class="like-form"
+                      action="/likes" method="POST" style="display:inline"
+                      data-micropost-id={ fmt.Sprint(item.Micropost.ID) }
+                      data-liked="false">
+                    <input type="hidden" name="csrf_token" value={ csrfToken }/>
+                    <input type="hidden" name="micropost_id" value={ fmt.Sprintf("%d", item.Micropost.ID) }/>
+                    <button type="submit" class="btn-like" title="Like">♡</button>
+                </form>
+            }
+        }
+    </span>
+}
+
+// BookmarkButton はブックマーク/ブックマーク解除フォームを表示する。
+// ログインしていない場合は何も表示しない。
+templ BookmarkButton(item store.FeedItem, csrfToken string, currentUser *model.User) {
+    if currentUser != nil {
+        <span class="bookmark-info">
+            if item.IsBookmarked {
+                <form action={ templ.SafeURL(fmt.Sprintf("/bookmarks/%d", item.Micropost.ID)) } method="POST" style="display:inline">
+                    <input type="hidden" name="csrf_token" value={ csrfToken }/>
+                    <input type="hidden" name="_method" value="DELETE"/>
+                    <button type="submit" class="btn-bookmark btn-bookmark--active" title="Unbookmark">🔖</button>
+                </form>
+            } else {
+                <form action="/bookmarks" method="POST" style="display:inline">
+                    <input type="hidden" name="csrf_token" value={ csrfToken }/>
+                    <input type="hidden" name="micropost_id" value={ fmt.Sprintf("%d", item.Micropost.ID) }/>
+                    <button type="submit" class="btn-bookmark" title="Bookmark">🏷️</button>
+                </form>
+            }
+        </span>
+    }
+}
+
+// ShowBookmarks はユーザーがブックマークした投稿一覧ページ。
+templ ShowBookmarks(data UserPageData) {
+    @Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+        <div class="row">
+            <aside class="col-md-4">
+                <section class="user_info">
+                    <img src={ gravatarURL(data.User.Name, 80) } alt={ data.User.Name } class="gravatar"/>
+                    <h1>{ data.User.Name }</h1>
+                    <span><a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.User.ID)) }>view profile</a></span>
+                    <span><strong>Microposts:</strong> { fmt.Sprint(data.MicropostCount) }</span>
+                </section>
+                <section class="stats">
+                    @UserStats(data)
+                </section>
+            </aside>
+            <div class="col-md-8">
+                <h3>{ data.Title }</h3>
+                if len(data.Microposts) > 0 {
+                    <ol class="microposts">
+                        for _, item := range data.Microposts {
+                            <li id={ fmt.Sprintf("micropost-%d", item.Micropost.ID) }>
+                                <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", item.User.ID)) }>
+                                    <img src={ gravatarURL(item.User.Name, 50) } alt={ item.User.Name } class="gravatar"/>
+                                </a>
+                                <span class="user">
+                                    <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", item.User.ID)) }>{ item.User.Name }</a>
+                                </span>
+                                if item.ParentMicropost != nil && item.ParentUser != nil {
+                                    @QuotedPost(item.ParentMicropost, item.ParentUser)
+                                }
+                                <span class="content">
+                                    { item.Micropost.Content }
+                                    if item.Micropost.ImagePath != "" {
+                                        <img src={ "/static/images/microposts/" + item.Micropost.ImagePath } alt="Micropost image" class="micropost-image"/>
+                                    }
+                                </span>
+                                <span class="timestamp">
+                                    Posted { timeAgoInWords(item.Micropost.CreatedAt) } ago.
+                                    @LikeButton(item, data.CSRFToken, data.CurrentUser)
+                                    @BookmarkButton(item, data.CSRFToken, data.CurrentUser)
+                                    @ReplyButton(item.Micropost.ID, data.CurrentUser)
+                                </span>
+                                @ReplyForm(item.Micropost.ID, data.CSRFToken, data.CurrentUser, false)
+                            </li>
+                        }
+                    </ol>
+                    @PaginationNav(data.Pagination, fmt.Sprintf("/users/%d/bookmarks", data.User.ID))
+                } else {
+                    <p>まだブックマークした投稿がありません。</p>
+                }
+            </div>
+        </div>
+    }
+}
+
+// QuotedPost はリプライ元の投稿を引用スタイルで表示する。
+// item.ParentMicropost != nil のときのみ呼ぶ。
+templ QuotedPost(parent *model.Micropost, parentUser *model.User) {
+    <div class="reply-to-label">
+        ↩ Replying to
+        <a href={ templ.SafeURL(fmt.Sprintf("/users/%d", parentUser.ID)) }>{ "@" + parentUser.Name }</a>
+    </div>
+    <div class="quoted-post">
+        <img src={ gravatarURL(parentUser.Name, 20) } alt={ parentUser.Name } class="gravatar gravatar-xs"/>
+        <span class="quoted-user">{ parentUser.Name }</span>
+        <span class="quoted-content">{ parent.Content }</span>
+    </div>
+}
+
+// ReplyButton はリプライフォームをトグルするボタン。ログイン済みのときのみ表示。
+templ ReplyButton(micropostID int64, currentUser *model.User) {
+    if currentUser != nil {
+        <button class="btn-reply" data-micropost-id={ fmt.Sprintf("%d", micropostID) } title="Reply">↩</button>
+    }
+}
+
+// ReplyForm はリプライ投稿フォーム。
+// visible=false のとき非表示（フィード上）、visible=true のとき常に表示（詳細ページ）。
+// in_reply_to_id に micropostID をセットして POST /microposts に送信する。
+templ ReplyForm(micropostID int64, csrfToken string, currentUser *model.User, visible bool) {
+    if currentUser != nil {
+        {{
+            style := "display:none"
+            if visible {
+                style = ""
+            }
+        }}
+        <div id={ fmt.Sprintf("reply-form-%d", micropostID) } class="reply-form" style={ style }>
+            <form action="/microposts" method="POST">
+                <input type="hidden" name="csrf_token" value={ csrfToken }/>
+                <input type="hidden" name="in_reply_to_id" value={ fmt.Sprintf("%d", micropostID) }/>
+                <div class="field">
+                    <textarea name="content" class="reply-textarea" placeholder="Post your reply..."></textarea>
+                    <div class="micropost-counter-row">
+                        <span class="micropost-counter">0/140</span>
+                    </div>
+                </div>
+                <input type="submit" value="Reply" class="btn btn-primary btn-sm"/>
+            </form>
+        </div>
+    }
+}
+
+// MicropostDetailData はマイクロポスト詳細ページのテンプレートデータ。
+type MicropostDetailData struct {
+	Title       string
+	Flash       map[string]string
+	LoggedIn    bool
+	CurrentUser *model.User
+	CSRFToken   string
+	Debug       bool
+	DebugInfo   string
+	Post        store.FeedItem
+	Replies     []store.FeedItem
+	ReplyCount  int
+}
+
+// MicropostDetail はマイクロポスト詳細ページ。
+// 投稿・リプライ元引用・リプライ一覧を Twitter スタイルで表示する。
+templ MicropostDetail(data MicropostDetailData) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+		<div class="row">
+			<div class="col-md-8 col-md-offset-2">
+				<a href="javascript:history.back()" class="micropost-back">&larr; Back</a>
+
+				<div class="micropost-detail">
+					// リプライの場合はリプライ元を引用表示
+					if data.Post.ParentMicropost != nil && data.Post.ParentUser != nil {
+						@QuotedPost(data.Post.ParentMicropost, data.Post.ParentUser)
+					}
+
+					// 投稿者ヘッダー
+					<div class="micropost-detail-header">
+						<a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.Post.User.ID)) }>
+							<img src={ gravatarURL(data.Post.User.Name, 48) } alt={ data.Post.User.Name } class="gravatar"/>
+						</a>
+						<div class="micropost-detail-author">
+							<a href={ templ.SafeURL(fmt.Sprintf("/users/%d", data.Post.User.ID)) } class="micropost-author-name">
+								{ data.Post.User.Name }
+							</a>
+						</div>
+					</div>
+
+					// 本文
+					<p class="micropost-detail-content">{ data.Post.Micropost.Content }</p>
+					if data.Post.Micropost.ImagePath != "" {
+						<img src={ "/static/images/microposts/" + data.Post.Micropost.ImagePath } alt="Micropost image" class="micropost-image"/>
+					}
+
+					// 投稿日時
+					<p class="micropost-detail-meta">{ timeAgoInWords(data.Post.Micropost.CreatedAt) } ago</p>
+
+					// いいね・リプライ数
+					<div class="micropost-detail-actions">
+						@LikeButton(data.Post, data.CSRFToken, data.CurrentUser)
+						@BookmarkButton(data.Post, data.CSRFToken, data.CurrentUser)
+						<span class="reply-stat">↩ { fmt.Sprint(data.ReplyCount) } replies</span>
+						if data.CurrentUser != nil && data.CurrentUser.ID == data.Post.Micropost.UserID {
+							<form action={ templ.SafeURL(fmt.Sprintf("/microposts/%d", data.Post.Micropost.ID)) } method="POST" style="display:inline" onsubmit="return confirm('You sure?');">
+								<input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
+								<input type="hidden" name="_method" value="DELETE"/>
+								<button type="submit" class="btn-delete">delete</button>
+							</form>
+						}
+					</div>
+
+					// リプライフォーム（常に表示）
+					@ReplyForm(data.Post.Micropost.ID, data.CSRFToken, data.CurrentUser, true)
+				</div>
+
+				// リプライ一覧
+				if len(data.Replies) > 0 {
+					<h4 class="replies-heading">Replies ({ fmt.Sprint(data.ReplyCount) })</h4>
+					<ol class="microposts">
+						for _, reply := range data.Replies {
+							<li id={ fmt.Sprintf("micropost-%d", reply.Micropost.ID) }>
+								<a href={ templ.SafeURL(fmt.Sprintf("/users/%d", reply.User.ID)) }>
+									<img src={ gravatarURL(reply.User.Name, 50) } alt={ reply.User.Name } class="gravatar"/>
+								</a>
+								<span class="user">
+									<a href={ templ.SafeURL(fmt.Sprintf("/users/%d", reply.User.ID)) }>{ reply.User.Name }</a>
+								</span>
+								<span class="content">
+									<a href={ templ.SafeURL(fmt.Sprintf("/microposts/%d", reply.Micropost.ID)) } class="micropost-link">
+										{ reply.Micropost.Content }
+									</a>
+									if reply.Micropost.ImagePath != "" {
+										<img src={ "/static/images/microposts/" + reply.Micropost.ImagePath } alt="Micropost image" class="micropost-image"/>
+									}
+								</span>
+								<span class="timestamp">
+									Posted { timeAgoInWords(reply.Micropost.CreatedAt) } ago.
+									@LikeButton(reply, data.CSRFToken, data.CurrentUser)
+									@BookmarkButton(reply, data.CSRFToken, data.CurrentUser)
+									@ReplyButton(reply.Micropost.ID, data.CurrentUser)
+								</span>
+								@ReplyForm(reply.Micropost.ID, data.CSRFToken, data.CurrentUser, false)
+							</li>
+						}
+					</ol>
+				}
+			</div>
+		</div>
+	}
 }

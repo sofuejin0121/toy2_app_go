@@ -33,42 +33,41 @@ func (h *SessionHandler) New(w http.ResponseWriter, r *http.Request) {
 // フレンドリーフォワーディング: ログイン前にアクセスしようとしたURLがあれば
 // そこにリダイレクトします。
 func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
-	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
-	password := r.FormValue("password")
-	remember := r.FormValue("remember_me") == "1"
+    email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
+    password := r.FormValue("password")
+    remember := r.FormValue("remember_me") == "1"
 
-	user, err := h.store.FindUserByEmail(email)
-	if err != nil || !user.Authenticate(password) {
-		data := components.SessionPageData{
-			Title:       "Log in",
-			Flash:       map[string]string{"danger": "Invalid email/password combination"},
-			LoggedIn:    false,
-			CurrentUser: nil,
-			CSRFToken:   middleware.CSRFTokenFromContext(r),
-		}
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		components.SessionNew(data).Render(r.Context(), w)
-		return
-	}
+    user, err := h.store.Authenticate(email, password)
+    if err != nil {
+        data := components.SessionPageData{
+            Title:       "Log in",
+            Flash:       map[string]string{"danger": "Invalid email/password combination"},
+            LoggedIn:    false,
+            CurrentUser: nil,
+            CSRFToken:   middleware.CSRFTokenFromContext(r),
+        }
+        w.WriteHeader(http.StatusUnprocessableEntity)
+        _ = components.SessionNew(data).Render(r.Context(), w)
+        return
+    }
 
-	// フレンドリーフォワーディング: ログイン前の転送先URLを取得
-	forwardingURL := getForwardingURL(w, r)
+    // 有効化されていないユーザーはログインできない
+    if !user.Activated {
+        setFlash(w, "warning", "Account not activated. Check your email for the activation link.")
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
 
-	// ［Remember me］チェックボックスの値で分岐
-	if remember {
-		rememberUser(w, user, h.store)
-	} else {
-		forgetUser(w, user, h.store)
-	}
-	logIn(w, r, user.ID, h.store)
+    // フレンドリーフォワーディング: ログイン前の転送先URLを取得
+    forwardingURL := getForwardingURL(w, r)
+    logIn(w, user.ID, remember, h.store)
 
-	// 転送先URLがあればそこにリダイレクト、なければプロフィールページへ
-	if forwardingURL != "" {
-		http.Redirect(w, r, forwardingURL, http.StatusSeeOther)
-	} else {
-		http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID),
-			http.StatusSeeOther)
-	}
+    // 転送先URLがあればそこにリダイレクト、なければプロフィールページへ
+    if forwardingURL != "" {
+        http.Redirect(w, r, forwardingURL, http.StatusSeeOther)
+    } else {
+        http.Redirect(w, r, fmt.Sprintf("/users/%d", user.ID), http.StatusSeeOther)
+    }
 }
 
 func (h *SessionHandler) Destroy(w http.ResponseWriter, r *http.Request) {

@@ -2,8 +2,10 @@ package store
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	_ "modernc.org/sqlite"
 )
 
@@ -12,9 +14,16 @@ type Store struct {
 	db *sql.DB
 }
 
-// New はSQLiteに接続し、Storeを返します。
+// New はデータベースに接続し、Storeを返します。
+// dbPath が "libsql://" で始まる場合は Turso(libsql) ドライバを使用します。
+// それ以外はローカルの SQLite ファイルに接続します。
 func New(dbPath string) (*Store, error) {
-	db, err := sql.Open("sqlite", dbPath)
+	driver := "sqlite"
+	if strings.HasPrefix(dbPath, "libsql://") {
+		driver = "libsql"
+	}
+
+	db, err := sql.Open(driver, dbPath)
 	if err != nil {
 		return nil, err
 	}
@@ -36,11 +45,23 @@ func nowString() string {
 }
 
 func parseTime(value string) time.Time {
-	t, err := time.Parse(time.RFC3339, value)
-	if err != nil {
-		return time.Time{}
+	formats := []string{
+		time.RFC3339,
+		"2006-01-02T15:04:05Z",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
 	}
-	return t
+	for _, format := range formats {
+		if t, err := time.Parse(format, value); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
+}
+
+// DB はデータベース接続を返します。
+func (s *Store) DB() *sql.DB {
+	return s.db
 }
 
 

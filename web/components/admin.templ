@@ -1,0 +1,66 @@
+package components
+
+import (
+    "fmt"
+
+    "github.com/sofuejin0121/toy_app_go/internal/model"
+    "github.com/sofuejin0121/toy_app_go/internal/store"
+)
+
+// データ構造体
+type AdminPageData struct {
+    Title string
+    Flash map[string]string
+    LoggedIn bool
+    CSRFToken string
+    CurrentUser *model.User
+    Debug bool
+    DebugInfo string
+    Stats store.AdminStats
+}
+
+// ② テンプレート本体
+templ AdminIndex(data AdminPageData) {
+    @Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+        <h1>Admin Dashboard</h1>
+        // ── 統計カード 3枚 ──
+        <div class="row">
+            <div class="col-md-4">
+                <div class="admin-card">
+                    <div class="admin-card-label">Total Users</div>
+                    <div class="admin-card-value">{ fmt.Sprint(data.Stats.TotalUsers) }</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="admin-card">
+                    <div class="admin-card-label">Total Posts</div>
+                    <div class="admin-card-value">{ fmt.Sprint(data.Stats.TotalPosts) }</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="admin-card">
+                    <div class="admin-card-label">Today's Signups</div>
+                    <div class="admin-card-value">{ fmt.Sprint(data.Stats.TodaySignups) }</div>
+                </div>
+            </div>
+        </div>
+        // ── 日別登録テーブル ──
+        <h3>Daily Signups (Past 7 Days)</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>New Users</th>
+                </tr>
+            </thead>
+            <tbody>
+                for _, d := range data.Stats.DailySignups {
+                    <tr>
+                        <td>{ d.Date }</td>
+                        <td>{ fmt.Sprint(d.Count) }</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}

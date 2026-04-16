@@ -1,0 +1,53 @@
+package components
+
+import (
+	"github.com/sofuejin0121/toy_app_go/internal/model"
+)
+
+type UserPreferencePageData struct {
+	Title       string
+	Flash       map[string]string
+	LoggedIn    bool
+	CurrentUser *model.User
+	CSRFToken   string
+	Debug       bool
+	DebugInfo   string
+	Pref        *model.UserPreference
+}
+
+templ UserPreferenceEdit(data UserPreferencePageData) {
+	@Layout(data.Title, data.Flash, data.LoggedIn, data.CurrentUser, data.CSRFToken, data.Debug, data.DebugInfo) {
+		<div class="row">
+			<div class="col-md-6 col-md-offset-3">
+				<h1>Notification Settings</h1>
+				<form action="/settings" method="POST">
+					<input type="hidden" name="_method" value="PATCH"/>
+					<input type="hidden" name="csrf_token" value={ data.CSRFToken }/>
+					<div class="pref-item">
+						<label>
+							if data.Pref != nil && data.Pref.EmailOnFollow {
+								<input type="checkbox" name="email_on_follow" value="1" checked/>
+							} else {
+								<input type="checkbox" name="email_on_follow" value="1"/>
+							}
+							Email me when someone follows me
+						</label>
+					</div>
+					<div class="pref-item">
+						<label>
+							if data.Pref != nil && data.Pref.EmailOnLike {
+								<input type="checkbox" name="email_on_like" value="1" checked/>
+							} else {
+								<input type="checkbox" name="email_on_like" value="1"/>
+							}
+							Email me when someone likes my post
+						</label>
+					</div>
+					<div class="pref-submit">
+						<input type="submit" value="Save settings" class="btn btn-primary"/>
+					</div>
+				</form>
+			</div>
+		</div>
+	}
+}

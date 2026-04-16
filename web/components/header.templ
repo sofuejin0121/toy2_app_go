@@ -24,6 +24,11 @@ templ Header(loggedIn bool, currentUser *model.User, csrfToken string) {
                     <li><a href="/help">Help</a></li>
                     if loggedIn && currentUser != nil {
                         <li><a href="/users">Users</a></li>
+                        <li><a href="/notifications">🔔 通知</a></li>
+                        if currentUser.Admin {
+                            <li><a href="/admin">Admin</a></li>
+                        }
+                        <li><a href="/settings">Settings</a></li>
                         <li class="dropdown">
                             <a href="#" id="account" class="dropdown-toggle">
                                 Account <b class="caret"></b>

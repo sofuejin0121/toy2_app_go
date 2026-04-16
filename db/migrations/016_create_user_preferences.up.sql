@@ -1,0 +1,9 @@
+CREATE TABLE user_preferences (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER NOT NULL UNIQUE,
+    email_on_follow BOOLEAN NOT NULL DEFAULT TRUE,
+    email_on_like   BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

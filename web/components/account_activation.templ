@@ -1,0 +1,13 @@
+package components
+
+templ AccountActivationHTML(userName string, activationURL string) {
+    <h1>Sample App</h1>
+
+    <p>Hi { userName },</p>
+
+    <p>
+        Welcome to the Sample App! Click on the link below to activate your account:
+    </p>
+
+    <a href={ templ.SafeURL(activationURL) }>Activate</a>
+}

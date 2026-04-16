@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_microposts_user_id_created_at;

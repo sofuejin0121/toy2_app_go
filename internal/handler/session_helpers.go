@@ -1,29 +1,31 @@
 package handler
 
 import (
-	"github.com/sofuejin0121/toy_app_go/internal/model"
-	"github.com/sofuejin0121/toy_app_go/internal/store"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
+	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
 
 // logIn は渡されたユーザーでログインする。
 // セッション固定攻撃対策として、古いセッションCookieを破棄してから
 // 新しいセッションCookieにユーザーIDを保存する。
-// logIn は渡されたユーザーでログインする
-func logIn(w http.ResponseWriter, r *http.Request, userID int64,
-	s *store.Store) {
+func logIn(w http.ResponseWriter, userID int64, remember bool, s *store.Store) {
 	// セッション固定攻撃対策: 古いセッションCookieを破棄
 	middleware.ClearSessionCookie(w)
 	// 新しいセッションCookieにユーザーIDを保存
 	middleware.SetSessionValue(w, "user_id", strconv.FormatInt(userID, 10))
-
-	if user, err := s.GetUser(userID); err == nil {
-		middleware.SetSessionValue(w, "session_token", user.SessionToken(s))
+	user, err := s.GetUser(userID)
+	if err != nil {
+		return
+	}
+	middleware.SetSessionValue(w, "session_token", user.SessionToken(s))
+	if remember {
+		rememberUser(w, user, s)
 	}
 }
 
@@ -71,6 +73,19 @@ func rememberUser(w http.ResponseWriter, user *model.User, s *store.Store) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+// RequireLogin はログインしていないユーザーをリダイレクトするミドルウェアです。
+func RequireLogin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !isLoggedIn(r) {
+			storeLocation(w, r)
+			setFlash(w, "danger", "Please log in.")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	}
 }
 
 // storeLocation はアクセスしようとしたURLをセッションに保存する

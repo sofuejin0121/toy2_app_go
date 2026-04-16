@@ -1,9 +1,9 @@
 package store
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sofuejin0121/toy_app_go/internal/model"
 	"golang.org/x/crypto/bcrypt"
@@ -37,88 +37,108 @@ func scanPaginatedUser(scanner userScanner) (model.User, error) {
 	user.UpdatedAt = parseTime(updatedAt)
 	return user, nil
 }
+func (s *Store) GetUserByEmail(email string) (*model.User, error) {
+	var user model.User
+	var createdAt string
+	var updatedAt string
+	var activatedAtStr *string
+	var resetSentAtStr *string
+	err := s.db.QueryRow(`
+        SELECT id, name, email, COALESCE(bio, ''), password_digest, COALESCE(remember_digest, ''),
+               admin, COALESCE(activation_digest, ''), activated, activated_at,
+               COALESCE(reset_digest, ''), reset_sent_at,
+               created_at, updated_at
+        FROM users WHERE email = ?`, strings.ToLower(email)).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Bio, &user.PasswordDigest,
+		&user.RememberDigest, &user.Admin, &user.ActivationDigest,
+		&user.Activated, &activatedAtStr, &user.ResetDigest, &resetSentAtStr, &createdAt, &updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if activatedAtStr != nil {
+		t := parseTime(*activatedAtStr)
+		user.ActivatedAt = &t
+	}
+	if resetSentAtStr != nil {
+		t := parseTime(*resetSentAtStr)
+		user.ResetSentAt = &t
+	}
+	user.CreatedAt = parseTime(createdAt)
+	user.UpdatedAt = parseTime(updatedAt)
+	return &user, nil
+}
 
 // GetAllUsers はすべてのユーザーを返します
 func (s *Store) GetAllUsers() ([]model.User, error) {
-    rows, err := s.db.Query(`
+	rows, err := s.db.Query(`
         SELECT id, name, email, password_digest, COALESCE(remember_digest, ''),
                admin, created_at, updated_at
         FROM users ORDER BY created_at`)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var users []model.User
-    for rows.Next() {
-        var user model.User
-        if err := rows.Scan(
-            &user.ID, &user.Name, &user.Email, &user.PasswordDigest,
-            &user.RememberDigest, &user.CreatedAt, &user.UpdatedAt,
-        ); err != nil {
-            return nil, err
-        }
-        users = append(users, user)
-    }
-    return users, rows.Err()
-}
-// 既存ハンドラー互換のAllUsersラッパーを追加する 
-func (s *Store) AllUsers() ([]model.User, error) {
-	return s.GetAllUsers()
-}
-// GetUser は指定したIDのユーザーを返します
-func (s *Store) GetUser(id int64) (*model.User, error) {
-	row := s.db.QueryRow(
-		"SELECT id, name, email, password_digest, remember_digest, admin, created_at, updated_at FROM users WHERE id = ?",
-		id,
-	)
-	user, err := scanUser(row)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user %d not found", id)
-		}
-		return nil, fmt.Errorf("get user %d: %w", id, err)
-	}
-	return &user, nil
-}
-
-// GetMicropostsByUserID は指定ユーザーのマイクロポスト一覧を返します。
-// 1人のユーザーは複数のマイクロポストを持つことができます（has many）。
-func (s *Store) GetMicropostsByUserID(userID int64) ([]model.Micropost, error) {
-	rows, err := s.db.Query(
-		"SELECT id, content, user_id, created_at, updated_at FROM microposts WHERE user_id = ? ORDER BY id",
-		userID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("query microposts for user %d: %w", userID, err)
+		return nil, err
 	}
 	defer rows.Close()
 
-	var microposts []model.Micropost
+	var users []model.User
 	for rows.Next() {
-		micropost, err := scanMicropost(rows)
-		if err != nil {
-			return nil, fmt.Errorf("scan micropost for user %d: %w", userID, err)
+		var user model.User
+		var createdAt, updatedAt string
+		if err := rows.Scan(
+			&user.ID, &user.Name, &user.Email, &user.PasswordDigest,
+			&user.RememberDigest, &user.Admin, &createdAt, &updatedAt,
+		); err != nil {
+			return nil, err
 		}
-		microposts = append(microposts, micropost)
+		user.CreatedAt = parseTime(createdAt)
+		user.UpdatedAt = parseTime(updatedAt)
+		users = append(users, user)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate microposts for user %d: %w", userID, err)
-	}
-	return microposts, nil
+	return users, rows.Err()
 }
+
+// 既存ハンドラー互換のAllUsersラッパーを追加する
+func (s *Store) AllUsers() ([]model.User, error) {
+	return s.GetAllUsers()
+}
+
+// GetUser は指定したIDのユーザーを返します
+func (s *Store) GetUser(id int64) (*model.User, error) {
+	var user model.User
+	var createdAt string
+	var updatedAt string
+	var activatedAtStr *string
+	var resetSentAtStr *string
+	err := s.db.QueryRow(`
+        SELECT id, name, email, COALESCE(bio, ''), password_digest, COALESCE(remember_digest, ''),
+               admin, COALESCE(activation_digest, ''), activated, activated_at,
+               COALESCE(reset_digest, ''), reset_sent_at,
+               created_at, updated_at
+        FROM users WHERE id = ?`, id).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Bio, &user.PasswordDigest,
+		&user.RememberDigest, &user.Admin, &user.ActivationDigest,
+		&user.Activated, &activatedAtStr, &user.ResetDigest, &resetSentAtStr, &createdAt, &updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if activatedAtStr != nil {
+		t := parseTime(*activatedAtStr)
+		user.ActivatedAt = &t
+	}
+	if resetSentAtStr != nil {
+		t := parseTime(*resetSentAtStr)
+		user.ResetSentAt = &t
+	}
+	user.CreatedAt = parseTime(createdAt)
+	user.UpdatedAt = parseTime(updatedAt)
+	return &user, nil
+}
+
 
 // FindUserByEmail はメールアドレスに一致するユーザーを返します。
 func (s *Store) FindUserByEmail(email string) (*model.User, error) {
-	row := s.db.QueryRow(
-		"SELECT id, name, email, password_digest, remember_digest, admin, created_at, updated_at FROM users WHERE email = ?",
-		strings.ToLower(email),
-	)
-	user, err := scanUser(row)
-	if err != nil {
-		return nil, fmt.Errorf("find user by email %q: %w", email, err)
-	}
-	return &user, nil
+	return s.GetUserByEmail(email)
 }
 
 // CreateUser は新しいユーザーをデータベースに作成する
@@ -140,9 +160,14 @@ func (s *Store) CreateUser(u *model.User) error {
 	// ?はプレースホルダー(SQL インジェクション対策)
 	// 直接文字列を埋め込むと悪意のある入力でDBを操作される危険があるため
 	// 必ずプレースホルダーを使って値を渡す
+	var activatedAt *string
+	if u.ActivatedAt != nil {
+		s := u.ActivatedAt.Format(time.RFC3339)
+		activatedAt = &s
+	}
 	result, err := s.db.Exec(
-		"INSERT INTO users (name, email, password_digest,admin, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-		u.Name, u.Email, u.PasswordDigest, u.Admin, now, now,
+		"INSERT INTO users (name, email, password_digest, admin, activation_digest, activated, activated_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		u.Name, u.Email, u.PasswordDigest, u.Admin, u.ActivationDigest, u.Activated, activatedAt, now, now,
 	)
 
 	// ④ INSERT が失敗した場合のエラーハンドリング
@@ -181,29 +206,21 @@ func (s *Store) CreateUser(u *model.User) error {
 }
 
 // UpdateUser は既存ユーザーを更新します。
-func (s *Store) UpdateUser(user *model.User) error {
-	now := nowString()
-	user.Email = strings.ToLower(user.Email) // 保存前に小文字化
-	result, err := s.db.Exec(
-		"UPDATE users SET name = ?, email = ?, password_digest = ?, admin = ?, updated_at = ? WHERE id = ?",
-		user.Name,
-		user.Email,
-		user.PasswordDigest,
-		user.Admin,
-		now,
-		user.ID,
+func (s *Store) UpdateUser(u *model.User) error {
+	now := time.Now()
+	_, err := s.db.Exec(`
+        UPDATE users
+        SET name = ?, email = ?, bio = ?, password_digest = ?, remember_digest = ?,
+            admin = ?, activation_digest = ?, activated = ?, activated_at = ?,
+            updated_at = ?
+        WHERE id = ?`,
+		u.Name, strings.ToLower(u.Email), u.Bio, u.PasswordDigest, u.RememberDigest,
+		u.Admin, u.ActivationDigest, u.Activated, u.ActivatedAt, now, u.ID,
 	)
 	if err != nil {
-		return fmt.Errorf("update user %d: %w", user.ID, err)
+		return fmt.Errorf("update user: %w", err)
 	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("rows affected for user %d: %w", user.ID, err)
-	}
-	if rowsAffected == 0 {
-		return fmt.Errorf("user %d not found", user.ID)
-	}
-	user.UpdatedAt = parseTime(now)
+	u.UpdatedAt = now
 	return nil
 }
 
@@ -261,27 +278,162 @@ func (s *Store) CountUsers() (int, error) {
 	return count, nil
 }
 
+// CountActivatedUsers は有効化済みユーザーの総数を返します。
+func (s *Store) CountActivatedUsers() (int, error) {
+	row := s.db.QueryRow("SELECT COUNT(*) FROM users WHERE activated = TRUE")
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, fmt.Errorf("count activated users: %w", err)
+	}
+	return count, nil
+}
+
 // PaginateUsers はユーザーをページングして返します。
 func (s *Store) PaginateUsers(page, perPage int) ([]model.User, error) {
-    if page < 1 {
-        page = 1
-    }
-    offset := (page - 1) * perPage
-    rows, err := s.db.Query(`
-        SELECT id, name, email, password_digest, remember_digest, admin, created_at, updated_at
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * perPage
+	rows, err := s.db.Query(`
+        SELECT id, name, email, admin, activated, created_at, updated_at
         FROM users ORDER BY created_at LIMIT ? OFFSET ?`, perPage, offset)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var users []model.User
-    for rows.Next() {
-        user, err := scanPaginatedUser(rows)
-        if err != nil {
-            return nil, err
-        }
-        users = append(users, user)
-    }
-    return users, rows.Err()
+	var users []model.User
+	for rows.Next() {
+		var user model.User
+		var createdAt, updatedAt string
+		if err := rows.Scan(
+			&user.ID, &user.Name, &user.Email, &user.Admin,
+			&user.Activated, &createdAt, &updatedAt,
+		); err != nil {
+			return nil, err
+		}
+		user.CreatedAt = parseTime(createdAt)
+		user.UpdatedAt = parseTime(updatedAt)
+		users = append(users, user)
+	}
+	return users, rows.Err()
+}
+
+// Authenticate はメールアドレスとパスワードでユーザーを認証します
+// 認証に成功した場合はユーザーを返し、失敗した場合はエラーを返す
+func (s *Store) Authenticate(email, password string) (*model.User, error) {
+	user, err := s.GetUserByEmail(email)
+	if err != nil {
+		return nil, fmt.Errorf("authenticate: %w", err)
+	}
+	if !user.Authenticate(password) {
+		return nil, fmt.Errorf("authenticate: invalid password")
+	}
+	return user, nil
+}
+
+// UpdateActivation はユーザーの有効化ステータスを更新する
+func (s *Store) UpdateActivation(userID int64, activated bool, activatedAt time.Time) error {
+	_, err := s.db.Exec(
+		"Update users SET activated = ?, activated_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		activated, activatedAt, userID,
+	)
+	return err
+}
+
+func (s *Store) GetActivatedUsers(page int) ([]model.User, error) {
+	if page < 1 {
+		page = 1
+	}
+	const perPage = 30
+	offset := (page - 1) * perPage
+	rows, err := s.db.Query(`
+	SELECT id, name, email, admin, activated, created_at, updated_at
+	FROM users
+	WHERE activated = TRUE
+	ORDER BY created_at LIMIT ? OFFSET ?`, perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.User
+	for rows.Next() {
+		var user model.User
+		var createdAt, updatedAt string
+		if err := rows.Scan(
+			&user.ID, &user.Name, &user.Email, &user.Admin,
+			&user.Activated, &createdAt, &updatedAt,
+		); err != nil {
+			return nil, err
+		}
+		user.CreatedAt = parseTime(createdAt)
+		user.UpdatedAt = parseTime(updatedAt)
+		users = append(users, user)
+	}
+	return users, rows.Err()
+}
+
+// SearchActivatedUsers は名前かメールにqueryを含む有効ユーザーをページング付きで返す。
+// SQL の LIKE 句で前後にワイルドカード(%)を付けた部分一致検索を行う。
+func (s *Store) SearchActivatedUsers(query string, page, perPage int) ([]model.User, error) {
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * perPage
+	like := "%" + query + "%"
+	rows, err := s.db.Query(`
+		SELECT id, name, email, admin, activated, created_at, updated_at
+		FROM users
+		WHERE activated = TRUE AND (name LIKE ? OR email LIKE ?)
+		ORDER BY created_at
+		LIMIT ? OFFSET ?`, like, like, perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.User
+	for rows.Next() {
+		var user model.User
+		var createdAt, updatedAt string
+		if err := rows.Scan(
+			&user.ID, &user.Name, &user.Email, &user.Admin,
+			&user.Activated, &createdAt, &updatedAt,
+		); err != nil {
+			return nil, err
+		}
+		user.CreatedAt = parseTime(createdAt)
+		user.UpdatedAt = parseTime(updatedAt)
+		users = append(users, user)
+	}
+	return users, rows.Err()
+}
+
+// CountSearchActivatedUsers は検索条件に一致する有効ユーザー数を返す。
+func (s *Store) CountSearchActivatedUsers(query string) (int, error) {
+	like := "%" + query + "%"
+	var count int
+	err := s.db.QueryRow(`
+		SELECT COUNT(*) FROM users
+		WHERE activated = TRUE AND (name LIKE ? OR email LIKE ?)`, like, like).Scan(&count)
+	return count, err
+}
+
+// UpdateResetDigest はリセットダイジェストと送信時刻を更新する
+func (s *Store) UpdateResetDigest(userID int64, digest string, sentAt time.Time) error {
+	_, err := s.db.Exec(
+		"UPDATE users SET reset_digest = ?, reset_sent_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		digest, sentAt, userID,
+	)
+	return err
+}
+
+// ClearResetDigest は使用済みのリセットダイジェストを無効化する
+func (s *Store) ClearResetDigest(userID int64) error {
+	_, err := s.db.Exec(
+		"UPDATE users SET reset_digest = NULL, reset_sent_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		userID,
+	)
+	return err
 }
