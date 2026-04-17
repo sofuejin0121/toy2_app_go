@@ -111,7 +111,7 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
 
           {post.image_path && (
             <img
-              src={`/static/images/microposts/${post.image_path}`}
+              src={post.image_path}
               alt="投稿画像"
               className="mt-2 rounded-lg max-h-64 w-auto object-cover"
             />

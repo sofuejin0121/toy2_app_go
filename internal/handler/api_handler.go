@@ -7,19 +7,20 @@ import (
 
 	"github.com/sofuejin0121/toy_app_go/internal/mailer"
 	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/storage"
 	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
 
 // APIHandler はJSON APIエンドポイントをすべて担当するハンドラーです。
 type APIHandler struct {
-	store    *store.Store
-	mailer   mailer.Mailer
-	imageDir string
+	store   *store.Store
+	mailer  mailer.Mailer
+	storage storage.ImageStorage
 }
 
 // NewAPIHandler は新しいAPIHandlerを作成します。
-func NewAPIHandler(s *store.Store, m mailer.Mailer, imageDir string) *APIHandler {
-	return &APIHandler{store: s, mailer: m, imageDir: imageDir}
+func NewAPIHandler(s *store.Store, m mailer.Mailer, st storage.ImageStorage) *APIHandler {
+	return &APIHandler{store: s, mailer: m, storage: st}
 }
 
 // ---- JSON レスポンス型 ----
@@ -150,12 +151,16 @@ func makePagination(page, perPage, total int) PaginationJSON {
 	}
 }
 
-func feedItemToJSON(item store.FeedItem) MicropostJSON {
+func (h *APIHandler) feedItemToJSON(item store.FeedItem) MicropostJSON {
+	imageURL := ""
+	if item.Micropost.ImagePath != "" {
+		imageURL = h.storage.PublicURL(item.Micropost.ImagePath)
+	}
 	mj := MicropostJSON{
 		ID:           item.Micropost.ID,
 		Content:      item.Micropost.Content,
 		UserID:       item.Micropost.UserID,
-		ImagePath:    item.Micropost.ImagePath,
+		ImagePath:    imageURL,
 		InReplyToID:  item.Micropost.InReplyToID,
 		LikeCount:    item.LikeCount,
 		IsLiked:      item.IsLiked,
@@ -173,10 +178,10 @@ func feedItemToJSON(item store.FeedItem) MicropostJSON {
 	return mj
 }
 
-func feedItemsToJSON(items []store.FeedItem) []MicropostJSON {
+func (h *APIHandler) feedItemsToJSON(items []store.FeedItem) []MicropostJSON {
 	result := make([]MicropostJSON, len(items))
 	for i, item := range items {
-		result[i] = feedItemToJSON(item)
+		result[i] = h.feedItemToJSON(item)
 	}
 	return result
 }

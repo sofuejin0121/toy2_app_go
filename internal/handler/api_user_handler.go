@@ -127,7 +127,7 @@ func (h *APIHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		FollowersCount: followersCount,
 		LikedCount:     likedCount,
 		BookmarkCount:  bookmarkCount,
-		Microposts:     feedItemsToJSON(microposts),
+		Microposts:     h.feedItemsToJSON(microposts),
 		Pagination:     makePagination(page, perPage, micropostCount),
 	}
 	if cu != nil {
@@ -326,7 +326,7 @@ func (h *APIHandler) GetUserLikes(w http.ResponseWriter, r *http.Request) {
 	micropostCount, _ := h.store.CountMicropostsByUserID(user.ID)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"user":            userToJSON(*user),
-		"microposts":      feedItemsToJSON(items),
+		"microposts":      h.feedItemsToJSON(items),
 		"liked_count":     likedCount,
 		"following_count": followingCount,
 		"followers_count": followersCount,
@@ -368,7 +368,7 @@ func (h *APIHandler) GetUserBookmarks(w http.ResponseWriter, r *http.Request) {
 	likedCount, _ := h.store.CountLikedMicroposts(user.ID)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"user":            userToJSON(*user),
-		"microposts":      feedItemsToJSON(items),
+		"microposts":      h.feedItemsToJSON(items),
 		"bookmark_count":  bookmarkCount,
 		"following_count": followingCount,
 		"followers_count": followersCount,

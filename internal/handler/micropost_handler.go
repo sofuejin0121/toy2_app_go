@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
 	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/storage"
 	"github.com/sofuejin0121/toy_app_go/internal/store"
 	"github.com/sofuejin0121/toy_app_go/web/components"
 )
@@ -33,19 +33,13 @@ var allowedImageTypes = map[string]bool{
 
 // MicropostHandler はマイクロポストリソースのHTTPハンドラーです。
 type MicropostHandler struct {
-	store    *store.Store
-	imageDir string
+	store   *store.Store
+	storage storage.ImageStorage
 }
 
 // NewMicropostHandler は新しいMicropostHandlerを作成します。
-func NewMicropostHandler(s *store.Store, imageDir string) *MicropostHandler {
-	if err := os.MkdirAll(imageDir, 0o755); err != nil {
-		log.Printf("MkdirAll %s: %v", imageDir, err)
-	}
-	return &MicropostHandler{
-		store:    s,
-		imageDir: imageDir,
-	}
+func NewMicropostHandler(s *store.Store, st storage.ImageStorage) *MicropostHandler {
+	return &MicropostHandler{store: s, storage: st}
 }
 
 // RequireCorrectUser は現在のユーザーが対象マイクロポストの所有者かを確認します。
@@ -101,7 +95,7 @@ func (h *MicropostHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imagePath, imageErrs := processImageUpload(r, h.imageDir)
+	imagePath, imageErrs := processImageUpload(r, h.storage)
 	if len(imageErrs) > 0 {
 		setFlash(w, "danger", strings.Join(imageErrs, ", "))
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -174,9 +168,8 @@ func (h *MicropostHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 
 	mp, err := h.store.GetMicropost(id)
 	if err == nil && mp.ImagePath != "" {
-		fullPath := filepath.Join(h.imageDir, mp.ImagePath)
-		if removeErr := os.Remove(fullPath); removeErr != nil && !os.IsNotExist(removeErr) {
-			log.Printf("Remove image %s: %v", fullPath, removeErr)
+		if removeErr := h.storage.Delete(r.Context(), mp.ImagePath); removeErr != nil {
+			log.Printf("Delete image %s: %v", mp.ImagePath, removeErr)
 		}
 	}
 
@@ -210,9 +203,10 @@ func (h *MicropostHandler) Index(w http.ResponseWriter, r *http.Request) {
 	_ = components.MicropostIndex(data).Render(r.Context(), w)
 }
 
-// processImageUpload はリクエストから画像ファイルを処理します。
+// processImageUpload はリクエストから画像ファイルを処理し、storage にアップロードします。
 // 画像がアップロードされていない場合は空文字列を返します。
-func processImageUpload(r *http.Request, imageDir string) (string, []string) {
+// 戻り値はDBに保存するキー（ファイル名）です。公開URLは storage.PublicURL(key) で取得します。
+func processImageUpload(r *http.Request, st storage.ImageStorage) (string, []string) {
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		return "", nil
@@ -242,13 +236,8 @@ func processImageUpload(r *http.Request, imageDir string) (string, []string) {
 	}
 	filename := fmt.Sprintf("%d_%d%s", time.Now().UnixNano(), header.Size, strings.ToLower(ext))
 
-	dst, err := os.Create(filepath.Join(imageDir, filename))
-	if err != nil {
-		return "", []string{"画像の保存に失敗しました"}
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, file); err != nil {
+	if err := st.Upload(r.Context(), filename, file, contentType); err != nil {
+		log.Printf("processImageUpload: Upload %s: %v", filename, err)
 		return "", []string{"画像の保存に失敗しました"}
 	}
 

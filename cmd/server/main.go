@@ -4,11 +4,11 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/sofuejin0121/toy_app_go/internal/handler"
 	"github.com/sofuejin0121/toy_app_go/internal/mailer"
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
+	"github.com/sofuejin0121/toy_app_go/internal/storage"
 	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
 
@@ -54,8 +54,32 @@ func main() {
 	}
 	defer s.Close()
 
-	imageDir := filepath.Join("web", "static", "images", "microposts")
-	apiHandler := handler.NewAPIHandler(s, m, imageDir)
+	// 画像ストレージ: 本番は Cloudflare R2、開発はローカルファイルシステム
+	var imageStorage storage.ImageStorage
+	if os.Getenv("GO_ENV") == "production" {
+		r2Storage, err := storage.NewR2Storage(
+			os.Getenv("R2_ACCOUNT_ID"),
+			os.Getenv("R2_ACCESS_KEY_ID"),
+			os.Getenv("R2_SECRET_ACCESS_KEY"),
+			os.Getenv("R2_BUCKET_NAME"),
+			os.Getenv("R2_PUBLIC_URL"), // 例: "https://pub-xxx.r2.dev"
+			"microposts",
+		)
+		if err != nil {
+			log.Fatalf("init R2 storage: %v", err)
+		}
+		imageStorage = r2Storage
+	} else {
+		localDir := "web/static/images/microposts"
+		localBaseURL := "http://localhost:" + port + "/static/images/microposts"
+		localStorage, err := storage.NewLocalStorage(localDir, localBaseURL)
+		if err != nil {
+			log.Fatalf("init local storage: %v", err)
+		}
+		imageStorage = localStorage
+	}
+
+	apiHandler := handler.NewAPIHandler(s, m, imageStorage)
 
 	mux := http.NewServeMux()
 

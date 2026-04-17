@@ -3,8 +3,6 @@ package handler
 import (
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/sofuejin0121/toy_app_go/internal/model"
@@ -29,7 +27,7 @@ func (h *APIHandler) Feed(w http.ResponseWriter, r *http.Request) {
 	}
 	total, _ := h.store.CountMicropostsByUserID(cu.ID)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"items":      feedItemsToJSON(items),
+		"items":      h.feedItemsToJSON(items),
 		"pagination": makePagination(page, perPage, total),
 	})
 }
@@ -54,8 +52,8 @@ func (h *APIHandler) GetMicropost(w http.ResponseWriter, r *http.Request) {
 	replies, _ := h.store.GetReplies(id, viewerID)
 	replyCount, _ := h.store.CountReplies(id)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"post":        feedItemToJSON(*post),
-		"replies":     feedItemsToJSON(replies),
+		"post":        h.feedItemToJSON(*post),
+		"replies":     h.feedItemsToJSON(replies),
 		"reply_count": replyCount,
 	})
 }
@@ -80,7 +78,7 @@ func (h *APIHandler) CreateMicropost(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"errors": errs})
 		return
 	}
-	imagePath, imageErrs := processImageUpload(r, h.imageDir)
+	imagePath, imageErrs := processImageUpload(r, h.storage)
 	if len(imageErrs) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"errors": imageErrs})
 		return
@@ -95,7 +93,7 @@ func (h *APIHandler) CreateMicropost(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, map[string]any{"id": micropost.ID})
 		return
 	}
-	writeJSON(w, http.StatusCreated, feedItemToJSON(*post))
+	writeJSON(w, http.StatusCreated, h.feedItemToJSON(*post))
 }
 
 // DELETE /api/microposts/{id}
@@ -115,9 +113,8 @@ func (h *APIHandler) DeleteMicropost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if mp.ImagePath != "" {
-		fullPath := filepath.Join(h.imageDir, mp.ImagePath)
-		if removeErr := os.Remove(fullPath); removeErr != nil && !os.IsNotExist(removeErr) {
-			log.Printf("Remove image %s: %v", fullPath, removeErr)
+		if removeErr := h.storage.Delete(r.Context(), mp.ImagePath); removeErr != nil {
+			log.Printf("Delete image %s: %v", mp.ImagePath, removeErr)
 		}
 	}
 	if err := h.store.DeleteMicropost(id); err != nil {

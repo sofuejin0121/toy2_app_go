@@ -14,6 +14,7 @@ import (
 	"github.com/sofuejin0121/toy_app_go/internal/mailer"
 	"github.com/sofuejin0121/toy_app_go/internal/middleware"
 	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/toy_app_go/internal/storage"
 	"github.com/sofuejin0121/toy_app_go/internal/store"
 )
 
@@ -24,8 +25,8 @@ func buildTestMux(s *store.Store) *http.ServeMux {
 	userHandler := NewUserHandler(s, mockMailer)
 	sessionHandler := NewSessionHandler(s)
 	staticHandler := NewStaticHandler(s)
-	imageDir := os.TempDir()
-	micropostHandler := NewMicropostHandler(s, imageDir)
+	localStorage, _ := storage.NewLocalStorage(os.TempDir(), "http://localhost")
+	micropostHandler := NewMicropostHandler(s, localStorage)
 	relationshipHandler := NewRelationshipHandler(s, mockMailer)
 
 	mux.HandleFunc("GET /{$}", staticHandler.Home)
