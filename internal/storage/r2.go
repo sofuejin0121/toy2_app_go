@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -29,7 +30,7 @@ type R2Storage struct {
 //   - publicURL:       R2 パブリックアクセスURL (末尾スラッシュなし)
 //   - prefix:          オブジェクトキーのプレフィックス ("microposts" 等、不要なら空文字)
 func NewR2Storage(accountID, accessKeyID, secretAccessKey, bucket, publicURL, prefix string) (*R2Storage, error) {
-	r2Endpoint := fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID)
+	r2Endpoint := fmt.Sprintf("https://%s.r2.cloudflarestorage.com", strings.TrimSpace(accountID))
 
 	cfg, err := config.LoadDefaultConfig(
 		context.Background(),
