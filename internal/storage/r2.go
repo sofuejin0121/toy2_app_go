@@ -45,6 +45,7 @@ func NewR2Storage(accountID, accessKeyID, secretAccessKey, bucket, publicURL, pr
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(r2Endpoint)
+		o.UsePathStyle = true // R2 requires path-style URLs
 	})
 
 	return &R2Storage{
