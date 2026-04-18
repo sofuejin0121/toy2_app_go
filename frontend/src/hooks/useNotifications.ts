@@ -7,19 +7,22 @@
 import useSWR from 'swr';
 import { deleteNotification, listNotifications } from '../api/client';
 import type { Notification } from '../types';
+import { updateIfDefined } from '../utils/updateIfDefined';
 
 export function useNotifications() {
   const { data, isLoading: loading, mutate } = useSWR('notifications', listNotifications);
 
+  // `?.` … 未取得は undefined / `??` … 通知リストは空配列にする
   const notifications: Notification[] = data?.notifications ?? [];
 
   async function deleteOne(notificationId: number) {
     await deleteNotification(notificationId);
     mutate(
       (prev) =>
-        prev
-          ? { notifications: prev.notifications.filter((n) => n.id !== notificationId) }
-          : prev,
+        updateIfDefined(prev, (p) => ({
+          ...p,
+          notifications: p.notifications.filter((n) => n.id !== notificationId),
+        })),
       { revalidate: false },
     );
   }

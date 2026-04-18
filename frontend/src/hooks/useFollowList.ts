@@ -25,6 +25,7 @@ export function useFollowList(
     },
   );
 
+  // `?.` … 未取得は undefined / `??` … ユーザー配列は空として扱う
   const users: User[] = data?.users ?? [];
   const pagination: Pagination | null = data?.pagination ?? null;
 

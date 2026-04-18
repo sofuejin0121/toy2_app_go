@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination';
 import UserCard from '../components/UserCard';
 import { useUserList } from '../hooks/useUserList';
 import { currentUserAtom } from '../store/auth';
+import { updateIfDefined } from '../utils/updateIfDefined';
 
 export default function UserListPage() {
   const [currentUser] = useAtom(currentUserAtom);
@@ -27,8 +28,7 @@ export default function UserListPage() {
     try {
       await deleteUser(userId);
       mutate(
-        (prev) =>
-          prev ? { ...prev, users: prev.users.filter((u) => u.id !== userId) } : prev,
+        (prev) => updateIfDefined(prev, (p) => ({ ...p, users: p.users.filter((u) => u.id !== userId) })),
         { revalidate: false },
       );
     } catch (e) {

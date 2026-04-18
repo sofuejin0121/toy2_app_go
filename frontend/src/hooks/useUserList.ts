@@ -13,6 +13,7 @@ export function useUserList(page: number, query: string) {
 
   const { data, isLoading: loading, mutate } = useSWR(key, () => listUsers(page, query));
 
+  // `?.` … まだ取得前は data が undefined / `??` … そのときは空配列として扱う
   const users: User[] = data?.users ?? [];
   const pagination: Pagination | null = data?.pagination ?? null;
 

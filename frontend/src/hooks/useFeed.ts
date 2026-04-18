@@ -14,6 +14,7 @@ import useSWR from 'swr';
 import { getFeed, getUser } from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import type { Micropost, Pagination, User } from '../types';
+import { updateIfDefined } from '../utils/updateIfDefined';
 
 interface FeedData {
   items: Micropost[];
@@ -46,14 +47,14 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
   const error = rawError ? getErrorMessage(rawError, 'フィードの取得に失敗しました') : null;
 
   function addPost(post: Micropost) {
-    mutateFeed((prev) => (prev ? { ...prev, items: [post, ...prev.items] } : prev), {
+    mutateFeed((prev) => updateIfDefined(prev, (p) => ({ ...p, items: [post, ...p.items] })), {
       revalidate: false,
     });
   }
 
   function removePost(postId: number) {
     mutateFeed(
-      (prev) => (prev ? { ...prev, items: prev.items.filter((p) => p.id !== postId) } : prev),
+      (prev) => updateIfDefined(prev, (p) => ({ ...p, items: p.items.filter((x) => x.id !== postId) })),
       { revalidate: false },
     );
   }
@@ -61,9 +62,10 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
   function updatePost(updated: Micropost) {
     mutateFeed(
       (prev) =>
-        prev
-          ? { ...prev, items: prev.items.map((p) => (p.id === updated.id ? updated : p)) }
-          : prev,
+        updateIfDefined(prev, (p) => ({
+          ...p,
+          items: p.items.map((x) => (x.id === updated.id ? updated : x)),
+        })),
       { revalidate: false },
     );
   }

@@ -7,6 +7,7 @@ import MicropostCard from '../components/MicropostCard';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
 import { useUserLikes } from '../hooks/useUserLikes';
+import { updateIfDefined } from '../utils/updateIfDefined';
 
 export default function LikesPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,9 +55,10 @@ export default function LikesPage() {
                   onDelete={(pid) =>
                     mutate(
                       (prev) =>
-                        prev
-                          ? { ...prev, microposts: prev.microposts.filter((p) => p.id !== pid) }
-                          : prev,
+                        updateIfDefined(prev, (p) => ({
+                          ...p,
+                          microposts: p.microposts.filter((x) => x.id !== pid),
+                        })),
                       { revalidate: false },
                     )
                   }

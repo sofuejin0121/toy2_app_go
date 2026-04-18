@@ -10,6 +10,7 @@ import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { currentUserAtom } from '../store/auth';
+import type { AlertState } from '../types';
 
 /**
  * プロフィール表示ページ。
@@ -21,7 +22,7 @@ export default function UserShowPage() {
   const [currentUser] = useAtom(currentUserAtom);
   const [page, setPage] = useState(1);
   const [followLoading, setFollowLoading] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [alert, setAlert] = useState<AlertState | null>(null);
 
   const { profile, loading, error, mutate } = useUserProfile(id, page);
 
@@ -67,6 +68,14 @@ export default function UserShowPage() {
     setFollowLoading(false);
   };
 
+  const onFollowClick = () => {
+    handleFollow().catch(() => {});
+  };
+
+  const onMicropostDeleted = () => {
+    mutate().catch(() => {});
+  };
+
   return (
     <Layout alert={alert || undefined}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -87,7 +96,7 @@ export default function UserShowPage() {
             {currentUser && !profile.is_current_user && (
               <button
                 type="button"
-                onClick={() => void handleFollow()}
+                onClick={onFollowClick}
                 disabled={followLoading}
                 className={`mt-4 w-full py-2 rounded-full text-sm font-medium transition-colors ${
                   profile.is_following
@@ -120,7 +129,7 @@ export default function UserShowPage() {
                 <MicropostCard
                   key={post.id}
                   post={post}
-                  onDelete={() => void mutate()}
+                  onDelete={onMicropostDeleted}
                 />
               ))}
               {profile.pagination && (

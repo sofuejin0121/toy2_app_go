@@ -10,6 +10,7 @@
 import useSWR from 'swr';
 import { getMicropost } from '../api/client';
 import type { Micropost } from '../types';
+import { updateIfDefined } from '../utils/updateIfDefined';
 
 export function useMicropostThread(id: string | undefined) {
   const { data, isLoading: loading, mutate } = useSWR(
@@ -18,14 +19,18 @@ export function useMicropostThread(id: string | undefined) {
   );
 
   const post = data?.post ?? null;
+  // `?.` … data がまだ無いときは undefined を避ける / `??` … 左が null/undefined なら右（空配列）を使う
   const replies = data?.replies ?? [];
 
   function setPost(p: Micropost) {
-    mutate((d) => (d ? { ...d, post: p } : d), { revalidate: false });
+    mutate((d) => updateIfDefined(d, (cur) => ({ ...cur, post: p })), { revalidate: false });
   }
 
   function setReplies(updater: (prev: Micropost[]) => Micropost[]) {
-    mutate((d) => (d ? { ...d, replies: updater(d.replies ?? []) } : d), { revalidate: false });
+    mutate(
+      (d) => updateIfDefined(d, (cur) => ({ ...cur, replies: updater(cur.replies ?? []) })),
+      { revalidate: false },
+    );
   }
 
   return { post, replies, loading, mutate, setPost, setReplies };

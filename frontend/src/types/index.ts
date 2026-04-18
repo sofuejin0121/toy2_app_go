@@ -71,6 +71,12 @@ export interface ApiError {
   errors?: string[];
 }
 
+/** Layout のトップ通知バーなど、成功・失敗メッセージの共通形 */
+export interface AlertState {
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+}
+
 // UserStatBar が必要とする最小限の統計情報
 // GET /api/users/:id/likes など UserProfile 全体が返らない API でも使えるようにする
 export interface UserStatSummary {

@@ -15,6 +15,7 @@ export function useUserLikes(id: string | undefined, page: number) {
     () => getUserLikes(Number(id), page),
   );
 
+  // `?.` … 未取得は undefined / `??` … 一覧は空配列にフォールバック
   const posts: Micropost[] = data?.microposts ?? [];
   const pagination: Pagination | null = data?.pagination ?? null;
 

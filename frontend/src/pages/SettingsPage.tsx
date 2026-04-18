@@ -5,9 +5,9 @@ import { useSettings } from '../hooks/useSettings';
 export default function SettingsPage() {
   // 通知設定の読み込みと保存を管理するカスタムフック
   // settings - 現在の設定値
-  // setSettings - チェックボックスの変更をローカルに反映する関数
+  // patchSettings - チェックボックスの変更をキャッシュ上に部分的に反映する関数
   // save - 保存ボタン押下時に API へ送信する関数
-  const { settings, setSettings, loading, saving, alert, save } = useSettings();
+  const { settings, patchSettings, loading, saving, alert, save } = useSettings();
 
   if (loading)
     return (
@@ -41,9 +41,7 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={settings.email_on_follow}
-                    onChange={(e) =>
-                      setSettings((s) => (s ? { ...s, email_on_follow: e.target.checked } : s))
-                    }
+                    onChange={(e) => patchSettings({ email_on_follow: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
@@ -59,9 +57,7 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={settings.email_on_like}
-                    onChange={(e) =>
-                      setSettings((s) => (s ? { ...s, email_on_like: e.target.checked } : s))
-                    }
+                    onChange={(e) => patchSettings({ email_on_like: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />

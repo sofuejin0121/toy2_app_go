@@ -3,11 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../api/client';
 import { currentUserAtom } from '../store/auth';
-
-interface AlertState {
-  type: 'success' | 'error' | 'info' | 'warning';
-  message: string;
-}
+import type { AlertState } from '../types';
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,6 +19,10 @@ export default function Layout({ children, alert }: LayoutProps) {
     await logout();
     setCurrentUser(null);
     navigate('/login');
+  };
+
+  const onLogoutClick = () => {
+    handleLogout().catch(() => {});
   };
 
   const alertColors = {
@@ -74,7 +74,7 @@ export default function Layout({ children, alert }: LayoutProps) {
                 )}
                 <button
                   type="button"
-                  onClick={() => void handleLogout()}
+                  onClick={onLogoutClick}
                   className="text-sm text-gray-500 hover:text-red-600"
                 >
                   ログアウト
@@ -151,7 +151,7 @@ export default function Layout({ children, alert }: LayoutProps) {
                 )}
                 <button
                   type="button"
-                  onClick={() => void handleLogout()}
+                  onClick={onLogoutClick}
                   className="block text-red-500 py-1 w-full text-left"
                 >
                   ログアウト
