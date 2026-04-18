@@ -1,3 +1,7 @@
+/**
+ * 指定ユーザーが「いいね」した投稿一覧。
+ * id または page が変わると key が変わり、自動で再フェッチされます（useEffect の依存配列が不要な理由）。
+ */
 import useSWR from 'swr';
 import { getUserLikes } from '../api/client';
 import { getErrorMessage } from '../api/errors';

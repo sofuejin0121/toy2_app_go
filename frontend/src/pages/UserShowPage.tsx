@@ -11,6 +11,11 @@ import UserStatBar from '../components/UserStatBar';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { currentUserAtom } from '../store/auth';
 
+/**
+ * プロフィール表示ページ。
+ * フォロー / アンフォロー後は、手で state をいじるのではなく useSWR の mutate() を呼び出し、
+ * サーバーからプロフィールを取り直します（楽観的更新より実装が単純で、数値のズレも起きにくい）。
+ */
 export default function UserShowPage() {
   const { id } = useParams<{ id: string }>();
   const [currentUser] = useAtom(currentUserAtom);
@@ -54,6 +59,7 @@ export default function UserShowPage() {
       } else {
         await follow(user.id);
       }
+      // 引数なし mutate = この key のデータをサーバーから再取得（リフェッチ）
       await mutate();
     } catch (_e) {
       setAlert({ type: 'error', message: 'フォロー操作に失敗しました' });

@@ -9,6 +9,12 @@ import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { currentUserAtom } from '../store/auth';
 
+/**
+ * プロフィール編集。認可は App.tsx の OwnerRoute が担当。
+ *
+ * 初期表示用に useSWR で getUser を呼びます（編集に必要なのは user 部分だけだが、既存 API を流用）。
+ * SWR がバックグラウンドで再検証しても、入力途中のフォームを上書きしないよう ref で「この id には初回だけ反映」と制御しています。
+ */
 export default function UserEditPage() {
   const { id } = useParams<{ id: string }>();
   const [currentUser, setCurrentUser] = useAtom(currentUserAtom);
@@ -24,6 +30,7 @@ export default function UserEditPage() {
   const [submitting, setSubmitting] = useState(false);
   const filledForId = useRef<string | undefined>(undefined);
 
+  // 第 1 ページのプロフィールを取ればフォーム初期値に十分（microposts は未使用）
   const { data, isLoading: pageLoading } = useSWR(
     id ? `user-edit-${id}` : null,
     () => getUser(Number(id), 1),

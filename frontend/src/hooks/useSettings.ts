@@ -1,3 +1,10 @@
+/**
+ * 通知設定の取得（SWR）と保存（通常の async 関数）。
+ *
+ * - 読み込み: useSWR('settings', getSettings) … マウント時に自動フェッチ、タブ復帰時の再検証は SWR のデフォルト動作に任せる。
+ * - チェックボックス: useState の setX のように見せたいので、mutate に関数を渡してキャッシュ上の settings を更新する。
+ * - 保存成功後: mutate(updated, { revalidate: false }) でサーバーと同じ内容をキャッシュに直接書き込み、余計な GET を避ける。
+ */
 import type { Dispatch, SetStateAction } from 'react';
 import { useState } from 'react';
 import useSWR from 'swr';

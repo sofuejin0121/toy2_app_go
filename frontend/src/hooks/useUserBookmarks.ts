@@ -1,3 +1,11 @@
+/**
+ * ブックマーク一覧。
+ *
+ * 「本人以外はこの URL を開けない」という判定は App.tsx の OwnerRoute に任せ、
+ * フックは id と page だけ見てフェッチします。フック内で navigate しなくてよくなります。
+ *
+ * 返す mutate は、一覧から 1 件消すなどローカル更新に使えます（BookmarksPage 参照）。
+ */
 import useSWR from 'swr';
 import { getUserBookmarks } from '../api/client';
 import { getErrorMessage } from '../api/errors';

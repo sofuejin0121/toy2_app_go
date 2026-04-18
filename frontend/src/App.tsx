@@ -19,6 +19,12 @@ import UserShowPage from './pages/UserShowPage';
 import LoadingSpinner from './components/LoadingSpinner';
 import { currentUserAtom } from './store/auth';
 
+/**
+ * ログイン済みユーザーのみ通すラッパー。
+ * - currentUser === undefined … まだ「自分が誰か」取得中 → スピナー
+ * - currentUser === null … 未ログイン → /login へ
+ * - User オブジェクト … 子のページを表示
+ */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [currentUser] = useAtom(currentUserAtom);
   if (currentUser === undefined)
@@ -31,6 +37,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * 「URL の :id とログイン中ユーザーが同じ人」だけ通すラッパー。
+ * プロフィール編集や自分のブックマークのように、他人が URL を直接叩いても見せたくない画面で使います。
+ * 認可チェックを各ページや各フックに散らさず、ルート定義に集約するのが目的です。
+ */
 function OwnerRoute({ children }: { children: React.ReactNode }) {
   const [currentUser] = useAtom(currentUserAtom);
   const { id } = useParams<{ id: string }>();
@@ -45,6 +56,10 @@ function OwnerRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * 管理者（admin フラグが true）だけ通すラッパー。
+ * AdminPage 内でまた navigate する必要がなくなります。
+ */
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const [currentUser] = useAtom(currentUserAtom);
   if (currentUser === undefined)
