@@ -35,25 +35,30 @@ export default function Pagination({ pagination, onPageChange }: Props) {
       >
         ‹
       </button>
-      {pages.map((p, i) =>
-        p === '...' ? (
-          <span key={`dot-${i}`} className="px-2 text-gray-400">
-            …
-          </span>
-        ) : (
+      {pages.map((p, i) => {
+        if (p === '...') {
+          return (
+            <span key={`dot-${i}`} className="px-2 text-gray-400">
+              …
+            </span>
+          );
+        }
+        const pageNumber = p;
+        return (
           <button
-            key={p}
-            onClick={() => onPageChange(p as number)}
+            key={pageNumber}
+            type="button"
+            onClick={() => onPageChange(pageNumber)}
             className={`px-3 py-1.5 text-sm rounded border transition-colors ${
-              p === current_page
+              pageNumber === current_page
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            {p}
+            {pageNumber}
           </button>
-        ),
-      )}
+        );
+      })}
       <button
         onClick={() => onPageChange(current_page + 1)}
         disabled={!has_next}

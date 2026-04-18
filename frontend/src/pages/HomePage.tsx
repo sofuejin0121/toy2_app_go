@@ -10,6 +10,58 @@ import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
 import { useFeed } from '../hooks/useFeed';
 import { currentUserAtom } from '../store/auth';
+import type { Micropost, Pagination as PaginationMeta } from '../types';
+
+interface HomeFeedSectionProps {
+  loading: boolean;
+  feed: { items: Micropost[]; pagination: PaginationMeta } | null;
+  removePost: (postId: number) => void;
+  updatePost: (post: Micropost) => void;
+  onPageChange: (page: number) => void;
+}
+
+/** フィード本体: 三項のネストを避け、状態ごとに return で分岐する */
+function HomeFeedSection({
+  loading,
+  feed,
+  removePost,
+  updatePost,
+  onPageChange,
+}: HomeFeedSectionProps) {
+  if (loading) {
+    return <div className="text-center py-10 text-gray-400">読み込み中...</div>;
+  }
+
+  if (!feed || feed.items.length === 0) {
+    return (
+      <div className="text-center py-10 text-gray-400">
+        <p>まだ投稿がありません。</p>
+        <p className="text-sm mt-1">
+          <Link to="/users" className="text-blue-600 hover:underline">
+            他のユーザーをフォロー
+          </Link>
+          して投稿を見てみましょう。
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {feed.items.map((post) => (
+        <MicropostCard
+          key={post.id}
+          post={post}
+          onDelete={removePost}
+          onUpdate={updatePost}
+        />
+      ))}
+      {feed.pagination && (
+        <Pagination pagination={feed.pagination} onPageChange={onPageChange} />
+      )}
+    </>
+  );
+}
 
 export default function HomePage() {
   const [currentUser] = useAtom(currentUserAtom);
@@ -89,33 +141,13 @@ export default function HomePage() {
           <MicropostForm onCreated={addPost} />
 
           {error && <ErrorMessage message={error} />}
-          {loading ? (
-            <div className="text-center py-10 text-gray-400">読み込み中...</div>
-          ) : !feed || feed.items.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">
-              <p>まだ投稿がありません。</p>
-              <p className="text-sm mt-1">
-                <Link to="/users" className="text-blue-600 hover:underline">
-                  他のユーザーをフォロー
-                </Link>
-                して投稿を見てみましょう。
-              </p>
-            </div>
-          ) : (
-            <>
-              {feed.items.map((post) => (
-                <MicropostCard
-                  key={post.id}
-                  post={post}
-                  onDelete={removePost}
-                  onUpdate={updatePost}
-                />
-              ))}
-              {feed.pagination && (
-                <Pagination pagination={feed.pagination} onPageChange={setPage} />
-              )}
-            </>
-          )}
+          <HomeFeedSection
+            loading={loading}
+            feed={feed}
+            removePost={removePost}
+            updatePost={updatePost}
+            onPageChange={setPage}
+          />
         </div>
       </div>
     </Layout>

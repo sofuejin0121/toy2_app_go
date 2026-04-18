@@ -53,6 +53,7 @@ export default function BookmarksPage() {
                   key={post.id}
                   post={post}
                   onDelete={(pid) =>
+                    // 楽観的に一覧から 1 件削除（キャッシュ未取得なら何もしない）
                     mutate(
                       (prev) =>
                         updateIfDefined(prev, (p) => ({

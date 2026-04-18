@@ -9,6 +9,7 @@
  * mutate と revalidate: false:
  * - 投稿直後など「サーバーに取りに行かず、今のキャッシュだけ手で直す」ときに使います。
  * - 再フェッチしたいときは `mutate()` だけ呼ぶ（オプション省略）など、別の書き方もできます。
+ * - 下の `mutateFeed((prev) => updateIfDefined(prev, ...))` は、未取得の prev では何もしない安全な更新パターンです。
  */
 import useSWR from 'swr';
 import { getFeed, getUser } from '../api/client';

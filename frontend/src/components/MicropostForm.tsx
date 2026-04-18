@@ -22,6 +22,7 @@ export default function MicropostForm({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // type="file" は React state で中身をリセットしづらいので、送信成功後に DOM の value を空にして同じファイルを選べるようにする。
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!currentUser) return null;

@@ -28,6 +28,8 @@ export default function UserEditPage() {
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  // SWR が再検証して data が更新されても、編集中の入力を上書きしないためのフラグ。
+  // 「どのユーザー id に対してサーバー値をフォームへ流し込んだか」を保持し、同一 id では一度だけ setForm する。
   const filledForId = useRef<string | undefined>(undefined);
 
   // 第 1 ページのプロフィールを取ればフォーム初期値に十分（microposts は未使用）

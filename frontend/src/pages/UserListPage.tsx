@@ -27,6 +27,7 @@ export default function UserListPage() {
     if (!window.confirm('このユーザーを削除しますか？')) return;
     try {
       await deleteUser(userId);
+      // SWR のキャッシュから削除済みユーザーを除く（未取得なら prev は undefined のまま）
       mutate(
         (prev) => updateIfDefined(prev, (p) => ({ ...p, users: p.users.filter((u) => u.id !== userId) })),
         { revalidate: false },

@@ -17,6 +17,7 @@ export function useNotifications() {
 
   async function deleteOne(notificationId: number) {
     await deleteNotification(notificationId);
+    // 一覧を取り直さず、キャッシュ上の配列だけから該当 ID を除く（prev が無いときは updateIfDefined が何もしない）
     mutate(
       (prev) =>
         updateIfDefined(prev, (p) => ({

@@ -1,5 +1,6 @@
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SettingsToggleRow from '../components/SettingsToggleRow';
 import { useSettings } from '../hooks/useSettings';
 
 export default function SettingsPage() {
@@ -30,39 +31,19 @@ export default function SettingsPage() {
               }}
               className="space-y-4"
             >
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">フォロー通知メール</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    フォローされたときにメールを受け取る
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.email_on_follow}
-                    onChange={(e) => patchSettings({ email_on_follow: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
-                </label>
-              </div>
+              <SettingsToggleRow
+                title="フォロー通知メール"
+                description="フォローされたときにメールを受け取る"
+                checked={settings.email_on_follow}
+                onCheckedChange={(checked) => patchSettings({ email_on_follow: checked })}
+              />
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">いいね通知メール</p>
-                  <p className="text-xs text-gray-500 mt-0.5">いいねされたときにメールを受け取る</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.email_on_like}
-                    onChange={(e) => patchSettings({ email_on_like: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
-                </label>
-              </div>
+              <SettingsToggleRow
+                title="いいね通知メール"
+                description="いいねされたときにメールを受け取る"
+                checked={settings.email_on_like}
+                onCheckedChange={(checked) => patchSettings({ email_on_like: checked })}
+              />
 
               <button
                 type="submit"
