@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import AccountActivationPage from './pages/AccountActivationPage';
 import AdminPage from './pages/AdminPage';
 import BookmarksPage from './pages/BookmarksPage';
@@ -16,18 +16,45 @@ import SignupPage from './pages/SignupPage';
 import UserEditPage from './pages/UserEditPage';
 import UserListPage from './pages/UserListPage';
 import UserShowPage from './pages/UserShowPage';
+import LoadingSpinner from './components/LoadingSpinner';
 import { currentUserAtom } from './store/auth';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // undefined = /me 取得中, null = 未ログイン, User = ログイン済み
   const [currentUser] = useAtom(currentUserAtom);
   if (currentUser === undefined)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+        <LoadingSpinner />
       </div>
     );
   if (!currentUser) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+function OwnerRoute({ children }: { children: React.ReactNode }) {
+  const [currentUser] = useAtom(currentUserAtom);
+  const { id } = useParams<{ id: string }>();
+  if (currentUser === undefined)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (String(currentUser.id) !== id) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const [currentUser] = useAtom(currentUserAtom);
+  if (currentUser === undefined)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (!currentUser.admin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -49,9 +76,9 @@ export default function App() {
       <Route
         path="/users/:id/edit"
         element={
-          <ProtectedRoute>
+          <OwnerRoute>
             <UserEditPage />
-          </ProtectedRoute>
+          </OwnerRoute>
         }
       />
       <Route
@@ -81,9 +108,9 @@ export default function App() {
       <Route
         path="/users/:id/bookmarks"
         element={
-          <ProtectedRoute>
+          <OwnerRoute>
             <BookmarksPage />
-          </ProtectedRoute>
+          </OwnerRoute>
         }
       />
       <Route path="/microposts/:id" element={<MicropostPage />} />
@@ -98,9 +125,9 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AdminPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       <Route

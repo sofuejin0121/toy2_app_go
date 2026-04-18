@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../api/client';
 import { getErrorMessage } from '../api/errors';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import { currentUserAtom } from '../store/auth';
 
@@ -35,11 +36,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">ログイン</h1>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

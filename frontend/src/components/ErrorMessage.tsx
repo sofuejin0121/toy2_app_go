@@ -1,13 +1,47 @@
-// エラーメッセージ表示
-// 使い方: if (error) return <ErrorMessage message={error} />;
 interface Props {
-  message: string;
+  message?: string;
+  messages?: string[];
+  className?: string;
+  /** フォーム内など、枠なしの1行表示 */
+  variant?: 'box' | 'inline';
 }
 
-export default function ErrorMessage({ message }: Props) {
+export default function ErrorMessage({
+  message,
+  messages,
+  className = '',
+  variant = 'box',
+}: Props) {
+  const lines = messages?.length ? messages : message ? [message] : [];
+  if (lines.length === 0) return null;
+
+  if (variant === 'inline') {
+    return (
+      <p className={`text-red-500 text-xs mt-1 ${className}`}>
+        {lines.length === 1 ? lines[0] : lines.join(' / ')}
+      </p>
+    );
+  }
+
+  if (lines.length === 1) {
+    return (
+      <div
+        className={`mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg ${className}`}
+      >
+        {lines[0]}
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-lg mx-auto mt-10 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-      {message}
+    <div
+      className={`mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg ${className}`}
+    >
+      <ul className="list-disc list-inside space-y-1">
+        {lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
     </div>
   );
 }

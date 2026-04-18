@@ -2,6 +2,7 @@ import { useAtom } from 'jotai';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { follow, unfollow } from '../api/client';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
@@ -17,9 +18,7 @@ export default function UserShowPage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // ユーザープロフィールと投稿一覧を取得するカスタムフック
-  // setProfile はフォロー状態の即時反映（楽観的更新）に使用する
-  const { profile, loading, error, setProfile } = useUserProfile(id, page);
+  const { profile, loading, error, mutate } = useUserProfile(id, page);
 
   if (loading)
     return (
@@ -28,7 +27,14 @@ export default function UserShowPage() {
       </Layout>
     );
 
-  if (error || !profile)
+  if (error)
+    return (
+      <Layout alert={alert || undefined}>
+        <ErrorMessage message={error} />
+      </Layout>
+    );
+
+  if (!profile)
     return (
       <Layout alert={alert || undefined}>
         <div className="text-center py-10 text-gray-400">ユーザーが見つかりません</div>
@@ -37,39 +43,18 @@ export default function UserShowPage() {
 
   const { user } = profile;
 
-  // フォロー / アンフォロー ボタンの処理
-  // API 呼び出しが完了する前に UI を更新する（楽観的更新）
   const handleFollow = async () => {
     if (followLoading) return;
     setFollowLoading(true);
     try {
       if (profile.is_following) {
-        await unfollow(profile.relationship_id!);
-        // フォロー解除：フォロワー数を -1、フォロー状態を false に更新
-        setProfile((prev) =>
-          prev
-            ? {
-                ...prev,
-                is_following: false,
-                followers_count: prev.followers_count - 1,
-                relationship_id: undefined,
-              }
-            : prev,
-        );
+        const rid = profile.relationship_id;
+        if (rid == null) throw new Error('relationship_id missing');
+        await unfollow(rid);
       } else {
-        const res = await follow(user.id);
-        // フォロー：フォロワー数を +1、フォロー状態を true に更新
-        setProfile((prev) =>
-          prev
-            ? {
-                ...prev,
-                is_following: true,
-                followers_count: prev.followers_count + 1,
-                relationship_id: res.relationship_id,
-              }
-            : prev,
-        );
+        await follow(user.id);
       }
+      await mutate();
     } catch (_e) {
       setAlert({ type: 'error', message: 'フォロー操作に失敗しました' });
     }
@@ -79,7 +64,6 @@ export default function UserShowPage() {
   return (
     <Layout alert={alert || undefined}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* サイドバー */}
         <aside className="md:col-span-1">
           <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-20">
             <div className="text-center mb-4">
@@ -96,7 +80,8 @@ export default function UserShowPage() {
 
             {currentUser && !profile.is_current_user && (
               <button
-                onClick={handleFollow}
+                type="button"
+                onClick={() => void handleFollow()}
                 disabled={followLoading}
                 className={`mt-4 w-full py-2 rounded-full text-sm font-medium transition-colors ${
                   profile.is_following
@@ -119,7 +104,6 @@ export default function UserShowPage() {
           </div>
         </aside>
 
-        {/* 投稿一覧 */}
         <div className="md:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">投稿</h2>
           {profile.microposts.length === 0 ? (
@@ -130,13 +114,7 @@ export default function UserShowPage() {
                 <MicropostCard
                   key={post.id}
                   post={post}
-                  onDelete={(postId) =>
-                    setProfile((prev) =>
-                      prev
-                        ? { ...prev, microposts: prev.microposts.filter((p) => p.id !== postId) }
-                        : prev,
-                    )
-                  }
+                  onDelete={() => void mutate()}
                 />
               ))}
               {profile.pagination && (

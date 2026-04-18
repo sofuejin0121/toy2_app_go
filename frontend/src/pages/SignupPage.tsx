@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signUp } from '../api/client';
 import { getErrorList } from '../api/errors';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 
 export default function SignupPage() {
@@ -73,15 +74,7 @@ export default function SignupPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">新規登録</h1>
 
-          {errors.length > 0 && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              <ul className="list-disc list-inside space-y-1">
-                {errors.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {errors.length > 0 && <ErrorMessage messages={errors} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {[

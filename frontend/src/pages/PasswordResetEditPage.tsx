@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { checkPasswordResetToken, resetPassword } from '../api/client';
 import { getErrorList } from '../api/errors';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import { currentUserAtom } from '../store/auth';
 
@@ -79,15 +80,7 @@ export default function PasswordResetEditPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">パスワードを再設定</h1>
 
-          {errors.length > 0 && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              <ul className="list-disc list-inside space-y-1">
-                {errors.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {errors.length > 0 && <ErrorMessage messages={errors} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

@@ -1,8 +1,10 @@
 import { useAtom } from 'jotai';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import useSWR from 'swr';
 import { getUser, updateUser } from '../api/client';
 import { getErrorList } from '../api/errors';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { currentUserAtom } from '../store/auth';
@@ -20,57 +22,43 @@ export default function UserEditPage() {
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
+  const filledForId = useRef<string | undefined>(undefined);
 
-  // 自分以外のユーザーの編集ページへのアクセスをリダイレクト
-  // render 中に navigate を呼ぶと React の警告が出るため useEffect に寄せる
-  // redirectedRef はリダイレクトを1回だけ実行するためのフラグ
-  const redirectedRef = useRef(false);
+  const { data, isLoading: pageLoading } = useSWR(
+    id ? `user-edit-${id}` : null,
+    () => getUser(Number(id), 1),
+  );
+
   useEffect(() => {
-    if (
-      !redirectedRef.current &&
-      currentUser !== undefined &&
-      (!currentUser || currentUser.id !== Number(id))
-    ) {
-      redirectedRef.current = true;
-      navigate('/');
+    if (id && filledForId.current !== undefined && filledForId.current !== id) {
+      filledForId.current = undefined;
     }
-  }, [currentUser, id, navigate]);
-
-  // 編集対象ユーザーの現在値をフォームに反映する
-  useEffect(() => {
-    if (!id) return;
-
-    async function loadUser() {
-      try {
-        const data = await getUser(Number(id));
-        setForm((prev) => ({
-          ...prev,
-          name: data.user.name,
-          email: data.user.email,
-          bio: data.user.bio ?? '',
-        }));
-      } finally {
-        setPageLoading(false);
-      }
-    }
-
-    loadUser();
   }, [id]);
+
+  useEffect(() => {
+    if (!data || !id) return;
+    if (filledForId.current === id) return;
+    filledForId.current = id;
+    setForm((prev) => ({
+      ...prev,
+      name: data.user.name,
+      email: data.user.email,
+      bio: data.user.bio ?? '',
+    }));
+  }, [id, data]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // フォーム送信：プロフィールを更新して詳細ページへ遷移
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) return;
     setSubmitting(true);
     setErrors([]);
     try {
       const updated = await updateUser(Number(id), form);
-      // Jotai atom を更新してヘッダーの表示名などを即時反映する
-      setCurrentUser({ ...currentUser, ...updated });
+      if (currentUser) setCurrentUser({ ...currentUser, ...updated });
       navigate(`/users/${id}`);
     } catch (err: unknown) {
       setErrors(getErrorList(err));
@@ -91,15 +79,7 @@ export default function UserEditPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">プロフィール編集</h1>
 
-          {errors.length > 0 && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              <ul className="list-disc list-inside space-y-1">
-                {errors.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {errors.length > 0 && <ErrorMessage messages={errors} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

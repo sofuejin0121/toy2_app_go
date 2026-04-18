@@ -2,6 +2,7 @@ import { useAtom } from 'jotai';
 import { useRef, useState } from 'react';
 import { createMicropost } from '../api/client';
 import { getErrorMessage } from '../api/errors';
+import ErrorMessage from './ErrorMessage';
 import { currentUserAtom } from '../store/auth';
 import type { Micropost } from '../types';
 
@@ -59,7 +60,7 @@ export default function MicropostForm({
             rows={3}
             className="w-full resize-none border-0 outline-none text-gray-900 placeholder-gray-400 text-sm"
           />
-          {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+          {error && <ErrorMessage message={error} variant="inline" />}
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <label className="cursor-pointer text-blue-500 hover:text-blue-600">

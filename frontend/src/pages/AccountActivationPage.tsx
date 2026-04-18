@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { activateAccount } from '../api/client';
 import { getErrorMessage } from '../api/errors';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import { currentUserAtom } from '../store/auth';
 
@@ -66,8 +67,9 @@ export default function AccountActivationPage() {
         {status === 'error' && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-2">有効化失敗</h2>
-            <p className="text-red-600 text-sm">{message}</p>
+            <ErrorMessage message={message} variant="inline" className="text-red-700 text-sm" />
             <button
+              type="button"
               onClick={() => navigate('/')}
               className="mt-4 text-blue-600 hover:underline text-sm"
             >

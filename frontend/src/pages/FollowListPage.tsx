@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Pagination from '../components/Pagination';
@@ -15,7 +16,6 @@ export default function FollowListPage({ mode }: Props) {
   const { id } = useParams<{ id: string }>();
   const [page, setPage] = useState(1);
 
-  // フォロー/フォロワー一覧を取得するカスタムフック
   const { users, statSummary, pagination, loading, error } = useFollowList(id, mode, page);
 
   return (
@@ -47,11 +47,7 @@ export default function FollowListPage({ mode }: Props) {
             {mode === 'following' ? 'フォロー中' : 'フォロワー'}
           </h2>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-                {error}
-              </div>
-            )}
+            {error && <ErrorMessage message={error} />}
             {loading ? (
               <LoadingSpinner />
             ) : users.length === 0 ? (

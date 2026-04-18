@@ -1,6 +1,7 @@
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
@@ -11,18 +12,14 @@ import { useFeed } from '../hooks/useFeed';
 import { currentUserAtom } from '../store/auth';
 
 export default function HomePage() {
-  // Jotai atom からログイン中のユーザーを取得
-  // undefined = /me 確認中、null = 未ログイン、User = ログイン済み
   const [currentUser] = useAtom(currentUserAtom);
   const [page, setPage] = useState(1);
 
-  // フィードとサイドバー用プロフィールを取得する（カスタムフック）
   const { feed, profile, loading, error, addPost, removePost, updatePost } = useFeed(
     currentUser,
     page,
   );
 
-  // 認証確認中は全画面スピナー（ウェルカム画面の一瞬表示を防ぐ）
   if (currentUser === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -31,7 +28,6 @@ export default function HomePage() {
     );
   }
 
-  // 未ログインの場合はウェルカム画面を表示
   if (currentUser === null) {
     return (
       <Layout>
@@ -60,7 +56,6 @@ export default function HomePage() {
   return (
     <Layout>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* サイドバー */}
         <aside className="md:col-span-1">
           {profile && (
             <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-20">
@@ -90,16 +85,10 @@ export default function HomePage() {
           )}
         </aside>
 
-        {/* メインフィード */}
         <div className="md:col-span-2 space-y-4">
-          {/* 投稿フォーム：送信成功時に addPost でフィードの先頭に追加 */}
           <MicropostForm onCreated={addPost} />
 
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
           {loading ? (
             <div className="text-center py-10 text-gray-400">読み込み中...</div>
           ) : !feed || feed.items.length === 0 ? (

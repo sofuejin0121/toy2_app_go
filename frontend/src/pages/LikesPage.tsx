@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
@@ -11,8 +12,7 @@ export default function LikesPage() {
   const { id } = useParams<{ id: string }>();
   const [page, setPage] = useState(1);
 
-  // いいね一覧を取得するカスタムフック
-  const { posts, setPosts, statSummary, pagination, loading, error } = useUserLikes(id, page);
+  const { posts, statSummary, pagination, loading, error, mutate } = useUserLikes(id, page);
 
   return (
     <Layout>
@@ -40,11 +40,7 @@ export default function LikesPage() {
 
         <div className="md:col-span-2 space-y-4">
           <h2 className="text-xl font-bold text-gray-900">いいねした投稿</h2>
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
           {loading ? (
             <LoadingSpinner />
           ) : posts.length === 0 ? (
@@ -55,7 +51,15 @@ export default function LikesPage() {
                 <MicropostCard
                   key={post.id}
                   post={post}
-                  onDelete={(pid) => setPosts((prev) => prev.filter((p) => p.id !== pid))}
+                  onDelete={(pid) =>
+                    mutate(
+                      (prev) =>
+                        prev
+                          ? { ...prev, microposts: prev.microposts.filter((p) => p.id !== pid) }
+                          : prev,
+                      { revalidate: false },
+                    )
+                  }
                 />
               ))}
               {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}

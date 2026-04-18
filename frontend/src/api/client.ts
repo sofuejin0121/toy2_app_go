@@ -67,6 +67,9 @@ export const getFollowing = (id: number, page = 1) =>
       following_count: number;
       followers_count: number;
       micropost_count: number;
+      liked_count: number;
+      bookmark_count: number;
+      is_current_user: boolean;
       pagination: Pagination;
     }>(`/users/${id}/following`, { params: { page } })
     .then((r) => r.data);
@@ -79,6 +82,9 @@ export const getFollowers = (id: number, page = 1) =>
       following_count: number;
       followers_count: number;
       micropost_count: number;
+      liked_count: number;
+      bookmark_count: number;
+      is_current_user: boolean;
       pagination: Pagination;
     }>(`/users/${id}/followers`, { params: { page } })
     .then((r) => r.data);
@@ -89,6 +95,8 @@ export const getUserLikes = (id: number, page = 1) =>
       user: User;
       microposts: Micropost[];
       liked_count: number;
+      bookmark_count: number;
+      is_current_user: boolean;
       following_count: number;
       followers_count: number;
       micropost_count: number;

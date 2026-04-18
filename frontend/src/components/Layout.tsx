@@ -72,7 +72,11 @@ export default function Layout({ children, alert }: LayoutProps) {
                     Admin
                   </Link>
                 )}
-                <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-600">
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="text-sm text-gray-500 hover:text-red-600"
+                >
                   ログアウト
                 </button>
               </>
@@ -92,7 +96,11 @@ export default function Layout({ children, alert }: LayoutProps) {
           </div>
 
           {/* Mobile Hamburger */}
-          <button className="md:hidden text-gray-600" onClick={() => setMenuOpen(!menuOpen)}>
+          <button
+            type="button"
+            className="md:hidden text-gray-600"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen ? (
                 <path
@@ -115,69 +123,52 @@ export default function Layout({ children, alert }: LayoutProps) {
 
         {/* Mobile Menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-gray-100 px-4 py-3 space-y-2 bg-white">
+          <>
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: メニュー内の任意クリックで閉じるラッパー（Issue #18） */}
+            <div
+              className="md:hidden border-t border-gray-100 px-4 py-3 space-y-2 bg-white"
+              onClick={() => setMenuOpen(false)}
+              role="presentation"
+            >
             {currentUser ? (
               <>
-                <Link
-                  to="/"
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-gray-700 py-1"
-                >
+                <Link to="/" className="block text-gray-700 py-1">
                   Home
                 </Link>
-                <Link
-                  to={`/users/${currentUser.id}`}
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-gray-700 py-1"
-                >
+                <Link to={`/users/${currentUser.id}`} className="block text-gray-700 py-1">
                   プロフィール
                 </Link>
-                <Link
-                  to="/notifications"
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-gray-700 py-1"
-                >
+                <Link to="/notifications" className="block text-gray-700 py-1">
                   通知
                 </Link>
-                <Link
-                  to="/settings"
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-gray-700 py-1"
-                >
+                <Link to="/settings" className="block text-gray-700 py-1">
                   設定
                 </Link>
                 {currentUser.admin && (
-                  <Link
-                    to="/admin"
-                    onClick={() => setMenuOpen(false)}
-                    className="block text-orange-600 py-1"
-                  >
+                  <Link to="/admin" className="block text-orange-600 py-1">
                     Admin
                   </Link>
                 )}
-                <button onClick={handleLogout} className="block text-red-500 py-1 w-full text-left">
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="block text-red-500 py-1 w-full text-left"
+                >
                   ログアウト
                 </button>
               </>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-gray-700 py-1"
-                >
+                <Link to="/login" className="block text-gray-700 py-1">
                   ログイン
                 </Link>
-                <Link
-                  to="/signup"
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-blue-600 py-1"
-                >
+                <Link to="/signup" className="block text-blue-600 py-1">
                   新規登録
                 </Link>
               </>
             )}
-          </div>
+            </div>
+          </>
         )}
       </nav>
 

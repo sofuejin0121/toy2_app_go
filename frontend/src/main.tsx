@@ -2,6 +2,7 @@ import { Provider } from 'jotai';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { SWRConfig } from 'swr';
 import App from './App.tsx';
 import { AuthLoader } from './contexts/AuthContext';
 import './index.css';
@@ -12,12 +13,12 @@ if (!rootEl) throw new Error('Root element not found');
 createRoot(rootEl).render(
   <StrictMode>
     <BrowserRouter>
-      {/* Provider は jotai の atom をグローバルに管理するためのラッパー */}
       <Provider>
-        {/* AuthLoader は起動時に一度だけログイン状態を確認する */}
-        <AuthLoader>
-          <App />
-        </AuthLoader>
+        <SWRConfig value={{ dedupingInterval: 2000 }}>
+          <AuthLoader>
+            <App />
+          </AuthLoader>
+        </SWRConfig>
       </Provider>
     </BrowserRouter>
   </StrictMode>,

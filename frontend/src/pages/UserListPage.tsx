@@ -11,27 +11,26 @@ import { currentUserAtom } from '../store/auth';
 export default function UserListPage() {
   const [currentUser] = useAtom(currentUserAtom);
   const [page, setPage] = useState(1);
-  // query = 実際に API に送る検索キーワード（送信ボタンで確定）
   const [query, setQuery] = useState('');
-  // inputQuery = 入力欄の一時的な値（Enter/送信ボタンまで API には送らない）
   const [inputQuery, setInputQuery] = useState('');
 
-  // ユーザー一覧を取得するカスタムフック
-  const { users, setUsers, pagination, loading } = useUserList(page, query);
+  const { users, pagination, loading, mutate } = useUserList(page, query);
 
-  // 検索フォーム送信
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
     setQuery(inputQuery);
   };
 
-  // ユーザー削除（管理者のみ）
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (userId: number) => {
     if (!window.confirm('このユーザーを削除しますか？')) return;
     try {
-      await deleteUser(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      await deleteUser(userId);
+      mutate(
+        (prev) =>
+          prev ? { ...prev, users: prev.users.filter((u) => u.id !== userId) } : prev,
+        { revalidate: false },
+      );
     } catch (e) {
       console.error(e);
     }

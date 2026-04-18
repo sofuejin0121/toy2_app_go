@@ -1,28 +1,18 @@
-import { useAtom } from 'jotai';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
 import { useUserBookmarks } from '../hooks/useUserBookmarks';
-import { currentUserAtom } from '../store/auth';
 
 export default function BookmarksPage() {
   const { id } = useParams<{ id: string }>();
-  const [currentUser] = useAtom(currentUserAtom);
-  const navigate = useNavigate();
   const [page, setPage] = useState(1);
 
-  // ブックマーク一覧を取得するカスタムフック
-  // 本人以外のアクセスはフック内部でホームへリダイレクトする
-  const { posts, setPosts, statSummary, pagination, loading, error } = useUserBookmarks(
-    id,
-    currentUser,
-    navigate,
-    page,
-  );
+  const { posts, statSummary, pagination, loading, error, mutate } = useUserBookmarks(id, page);
 
   return (
     <Layout>
@@ -50,11 +40,7 @@ export default function BookmarksPage() {
 
         <div className="md:col-span-2 space-y-4">
           <h2 className="text-xl font-bold text-gray-900">ブックマーク</h2>
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
           {loading ? (
             <LoadingSpinner />
           ) : posts.length === 0 ? (
@@ -65,7 +51,15 @@ export default function BookmarksPage() {
                 <MicropostCard
                   key={post.id}
                   post={post}
-                  onDelete={(pid) => setPosts((prev) => prev.filter((p) => p.id !== pid))}
+                  onDelete={(pid) =>
+                    mutate(
+                      (prev) =>
+                        prev
+                          ? { ...prev, microposts: prev.microposts.filter((p) => p.id !== pid) }
+                          : prev,
+                      { revalidate: false },
+                    )
+                  }
                 />
               ))}
               {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}

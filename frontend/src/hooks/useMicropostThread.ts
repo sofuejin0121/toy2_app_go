@@ -1,42 +1,23 @@
-/**
- * 投稿スレッドのデータ取得フック
- *
- * 役割: 指定した投稿とそのリプライ一覧を取得する
- *       GET /api/microposts/:id に対応
- *
- * 使い方:
- *   const { post, replies, loading } = useMicropostThread(id);
- *
- * 戻り値:
- *   post    - 対象の投稿（取得前は null）
- *   replies - リプライの配列
- *   loading - 取得中は true
- */
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { getMicropost } from '../api/client';
 import type { Micropost } from '../types';
 
 export function useMicropostThread(id: string | undefined) {
-  const [post, setPost] = useState<Micropost | null>(null);
-  const [replies, setReplies] = useState<Micropost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: loading, mutate } = useSWR(
+    id ? `micropost-thread-${id}` : null,
+    () => getMicropost(Number(id)),
+  );
 
-  useEffect(() => {
-    if (!id) return;
+  const post = data?.post ?? null;
+  const replies = data?.replies ?? [];
 
-    async function loadThread() {
-      try {
-        setLoading(true);
-        const data = await getMicropost(Number(id));
-        setPost(data.post);
-        setReplies(data.replies ?? []);
-      } finally {
-        setLoading(false);
-      }
-    }
+  function setPost(p: Micropost) {
+    mutate((d) => (d ? { ...d, post: p } : d), { revalidate: false });
+  }
 
-    loadThread();
-  }, [id]);
+  function setReplies(updater: (prev: Micropost[]) => Micropost[]) {
+    mutate((d) => (d ? { ...d, replies: updater(d.replies ?? []) } : d), { revalidate: false });
+  }
 
-  return { post, setPost, replies, setReplies, loading };
+  return { post, replies, loading, mutate, setPost, setReplies };
 }

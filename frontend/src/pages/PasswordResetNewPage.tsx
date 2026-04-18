@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { requestPasswordReset } from '../api/client';
 import { getErrorMessage } from '../api/errors';
+import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 
 export default function PasswordResetNewPage() {
@@ -61,11 +62,7 @@ export default function PasswordResetNewPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">パスワードを忘れた方へ</h1>
           <p className="text-sm text-gray-500 mb-6">登録済みのメールアドレスを入力してください</p>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

@@ -248,17 +248,24 @@ func (h *APIHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	followingCount, _ := h.store.CountFollowing(user.ID)
 	followersCount, _ := h.store.CountFollowers(user.ID)
 	micropostCount, _ := h.store.CountMicropostsByUserID(user.ID)
+	likedCount, _ := h.store.CountLikedMicroposts(user.ID)
+	bookmarkCount, _ := h.store.CountBookmarkedMicroposts(user.ID)
+	cu := currentUser(r)
+	isCurrentUser := cu != nil && cu.ID == user.ID
 	ujsons := make([]UserJSON, len(users))
 	for i, u := range users {
 		ujsons[i] = userToJSON(u)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"user":            userToJSON(*user),
-		"users":           ujsons,
-		"following_count": followingCount,
-		"followers_count": followersCount,
-		"micropost_count": micropostCount,
-		"pagination":      makePagination(page, perPage, followingCount),
+		"user":             userToJSON(*user),
+		"users":            ujsons,
+		"following_count":  followingCount,
+		"followers_count":  followersCount,
+		"micropost_count":  micropostCount,
+		"liked_count":      likedCount,
+		"bookmark_count":   bookmarkCount,
+		"is_current_user":  isCurrentUser,
+		"pagination":       makePagination(page, perPage, followingCount),
 	})
 }
 
@@ -283,17 +290,24 @@ func (h *APIHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	followingCount, _ := h.store.CountFollowing(user.ID)
 	followersCount, _ := h.store.CountFollowers(user.ID)
 	micropostCount, _ := h.store.CountMicropostsByUserID(user.ID)
+	likedCount, _ := h.store.CountLikedMicroposts(user.ID)
+	bookmarkCount, _ := h.store.CountBookmarkedMicroposts(user.ID)
+	cu := currentUser(r)
+	isCurrentUser := cu != nil && cu.ID == user.ID
 	ujsons := make([]UserJSON, len(users))
 	for i, u := range users {
 		ujsons[i] = userToJSON(u)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"user":            userToJSON(*user),
-		"users":           ujsons,
-		"following_count": followingCount,
-		"followers_count": followersCount,
-		"micropost_count": micropostCount,
-		"pagination":      makePagination(page, perPage, followersCount),
+		"user":             userToJSON(*user),
+		"users":            ujsons,
+		"following_count":  followingCount,
+		"followers_count":  followersCount,
+		"micropost_count":  micropostCount,
+		"liked_count":      likedCount,
+		"bookmark_count":   bookmarkCount,
+		"is_current_user":  isCurrentUser,
+		"pagination":       makePagination(page, perPage, followersCount),
 	})
 }
 
@@ -324,14 +338,18 @@ func (h *APIHandler) GetUserLikes(w http.ResponseWriter, r *http.Request) {
 	followingCount, _ := h.store.CountFollowing(user.ID)
 	followersCount, _ := h.store.CountFollowers(user.ID)
 	micropostCount, _ := h.store.CountMicropostsByUserID(user.ID)
+	bookmarkCount, _ := h.store.CountBookmarkedMicroposts(user.ID)
+	isCurrentUser := cu != nil && cu.ID == user.ID
 	writeJSON(w, http.StatusOK, map[string]any{
-		"user":            userToJSON(*user),
-		"microposts":      h.feedItemsToJSON(items),
-		"liked_count":     likedCount,
-		"following_count": followingCount,
-		"followers_count": followersCount,
-		"micropost_count": micropostCount,
-		"pagination":      makePagination(page, perPage, likedCount),
+		"user":             userToJSON(*user),
+		"microposts":       h.feedItemsToJSON(items),
+		"liked_count":      likedCount,
+		"bookmark_count":   bookmarkCount,
+		"is_current_user":  isCurrentUser,
+		"following_count":  followingCount,
+		"followers_count":  followersCount,
+		"micropost_count":  micropostCount,
+		"pagination":       makePagination(page, perPage, likedCount),
 	})
 }
 

@@ -1,17 +1,9 @@
-import { useAtom } from 'jotai';
-import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAdminStats } from '../hooks/useAdminStats';
-import { currentUserAtom } from '../store/auth';
 
 export default function AdminPage() {
-  const [currentUser] = useAtom(currentUserAtom);
-  const navigate = useNavigate();
-
-  // 管理者統計情報を取得するカスタムフック
-  // 非管理者のアクセスはフック内部でホームへリダイレクトする
-  const { stats, loading } = useAdminStats(currentUser, navigate);
+  const { stats, loading } = useAdminStats();
 
   if (loading)
     return (
