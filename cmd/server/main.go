@@ -85,6 +85,13 @@ func main() {
 
 	// ---- JSON API ルート (/api/ プレフィックス) ----
 
+	// ロードバランサ・監視・Render スリープ対策用（DB や認証に触れない軽量エンドポイント）
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+
 	// 認証
 	mux.HandleFunc("GET /api/me", apiHandler.Me)
 	mux.HandleFunc("POST /api/login", apiHandler.Login)
