@@ -9,7 +9,7 @@
  * 未ログイン時はいいね・BM ボタンを無効化し、削除も出さない（currentUser で判定）。
  */
 import { useAtom } from 'jotai';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { bookmark, deleteMicropost, like, unbookmark, unlike } from '../api/client';
 import { currentUserAtom } from '../store/auth';
@@ -34,10 +34,26 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
 
   const handleOpenImage = () => {
     setIsOpenImage(true);
-  }
+  };
+
   const handleCloseImage = () => {
     setIsOpenImage(false);
-  }
+  };
+
+  useEffect(() => {
+    if (!isOpenImage) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpenImage(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpenImage]);
+
   const handleLike = async () => {
     if (!currentUser || loading) return;
     setLoading(true);
@@ -138,9 +154,30 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
           )}
 
           {isOpenImage && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <img src={post.image_path} alt="投稿画像" className="max-w-full max-h-full object-contain" />
-              <button onClick={handleCloseImage} className="absolute top-4 right-4 text-white text-2xl">×</button>
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              onClick={handleCloseImage}
+              role="presentation"
+            >
+              <button
+                type="button"
+                aria-label="画像を閉じる"
+                onClick={handleCloseImage}
+                className="absolute right-3 top-3 z-[60] hidden h-10 w-10 items-center justify-center rounded-full bg-black/60 text-2xl leading-none text-white hover:bg-black/80 md:flex"
+              >
+                ×
+              </button>
+              <div
+                className="max-h-[min(100dvh,100vh)] max-w-[min(100dvw,100vw)]"
+                onClick={(e) => e.stopPropagation()}
+                role="presentation"
+              >
+                <img
+                  src={post.image_path}
+                  alt="投稿画像（拡大）"
+                  className="max-h-[min(100dvh,100vh)] max-w-full object-contain"
+                />
+              </div>
             </div>
           )}
 
