@@ -140,7 +140,7 @@ export default function UserEditPage() {
                     value={form.password}
                     onChange={handleChange}
                     autoComplete="new-password"
-                    inputClassName="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    helperText="右のボタンで入力内容の表示／非表示を切り替えられます。"
                   />
                 </div>
                 <div>
@@ -156,7 +156,7 @@ export default function UserEditPage() {
                     value={form.password_confirmation}
                     onChange={handleChange}
                     autoComplete="new-password"
-                    inputClassName="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    helperText="右のボタンで表示／非表示を切り替えられます。"
                   />
                 </div>
               </div>

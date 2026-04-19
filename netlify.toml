@@ -11,3 +11,14 @@
   from   = "/*"
   to     = "/index.html"
   status = 200
+
+# ハッシュ付き JS/CSS は長期キャッシュ、index は毎回検証（デプロイ直後に古いシェルが残りにくくする）
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

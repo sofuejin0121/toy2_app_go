@@ -7,17 +7,22 @@ type PasswordInputProps = {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   autoComplete?: string;
+  /** input に追加するクラス（ベースは他テキスト欄と同幅 w-full。枠線の重複は避ける） */
   inputClassName?: string;
   /** 入力欄の下に表示するヒント（例: 表示切替の案内） */
   helperText?: string;
 };
 
-const defaultInputClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+/** メール欄などと同じ見た目の幅・枠。右端はトグル用に余白（pr-11） */
+const inputBaseClass =
+  'w-full border border-gray-300 rounded-lg px-3 py-2 pr-11 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+const toggleClass =
+  'absolute right-1 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md border-0 bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1';
 
 /**
- * パスワードの表示/非表示トグル付き input。
- * ラベルは親で描画する想定（各ページのレイアウトを崩さないため）。
+ * パスワードの表示/非表示トグル。
+ * input は他フィールドと同じ w いっぱいの枠、トグルは枠内の右端に重ねて横に置く。
  */
 export default function PasswordInput({
   id: idProp,
@@ -26,7 +31,7 @@ export default function PasswordInput({
   onChange,
   required,
   autoComplete = 'current-password',
-  inputClassName = defaultInputClass,
+  inputClassName = '',
   helperText,
 }: PasswordInputProps) {
   const uid = useId();
@@ -35,30 +40,35 @@ export default function PasswordInput({
 
   const toggleLabel = visible ? 'パスワードを隠す' : 'パスワードを表示';
 
+  const inputClass = [inputBaseClass, inputClassName].filter(Boolean).join(' ');
+
   return (
-    <div className="relative">
-      <input
-        id={id}
-        name={name}
-        type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={onChange}
-        required={required}
-        autoComplete={autoComplete}
-        spellCheck={false}
-        aria-describedby={helperText ? `${id}-hint` : undefined}
-        className={inputClassName}
-      />
-      <button
-        type="button"
-        onClick={() => setVisible((v) => !v)}
-        title={toggleLabel}
-        className="absolute right-1.5 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-        aria-label={toggleLabel}
-        aria-pressed={visible}
-      >
-        {visible ? <EyeOffIcon /> : <EyeIcon />}
-      </button>
+    <div className="w-full">
+      {/* helperText は relative の外。内側だと absolute の top:50% の基準がずれる */}
+      <div className="relative w-full">
+        <input
+          id={id}
+          name={name}
+          type={visible ? 'text' : 'password'}
+          value={value}
+          onChange={onChange}
+          required={required}
+          autoComplete={autoComplete}
+          spellCheck={false}
+          aria-describedby={helperText ? `${id}-hint` : undefined}
+          className={inputClass}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          title={toggleLabel}
+          className={toggleClass}
+          aria-label={toggleLabel}
+          aria-pressed={visible}
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
       {helperText ? (
         <p className="mt-1 text-xs text-gray-500" id={`${id}-hint`}>
           {helperText}
