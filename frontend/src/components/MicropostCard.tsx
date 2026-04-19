@@ -28,7 +28,16 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
   const [isLiked, setIsLiked] = useState(post.is_liked);
   const [isBookmarked, setIsBookmarked] = useState(post.is_bookmarked);
   const [loading, setLoading] = useState(false);
+  const [isOpenImage, setIsOpenImage] = useState(false);
 
+
+
+  const handleOpenImage = () => {
+    setIsOpenImage(true);
+  }
+  const handleCloseImage = () => {
+    setIsOpenImage(false);
+  }
   const handleLike = async () => {
     if (!currentUser || loading) return;
     setLoading(true);
@@ -123,8 +132,16 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
             <img
               src={post.image_path}
               alt="投稿画像"
-              className="mt-2 rounded-lg max-h-64 w-auto object-cover"
+              onClick={handleOpenImage}
+              className="mt-2 rounded-lg max-h-64 w-auto object-cover cursor-pointer"
             />
+          )}
+
+          {isOpenImage && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <img src={post.image_path} alt="投稿画像" className="max-w-full max-h-full object-contain" />
+              <button onClick={handleCloseImage} className="absolute top-4 right-4 text-white text-2xl">×</button>
+            </div>
           )}
 
           {/* アクションボタン */}
