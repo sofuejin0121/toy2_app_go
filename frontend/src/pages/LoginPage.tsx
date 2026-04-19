@@ -30,7 +30,7 @@ export default function LoginPage() {
       // ログイン前に飛んでいた getMe の 401 が遅れて届いても currentUser を消さないよう epoch を先に進める
       bumpAuthEpoch((n) => n + 1);
       setCurrentUser(user);
-      navigate(`/users/${user.id}`);
+      navigate(`/`);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "ログインに失敗しました"));
     }
