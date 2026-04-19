@@ -7,6 +7,7 @@ import { getErrorList } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PasswordInput from '../components/PasswordInput';
 import { currentUserAtom } from '../store/auth';
 
 /**
@@ -127,27 +128,35 @@ export default function UserEditPage() {
               </p>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="edit-password"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     新しいパスワード
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
+                    id="edit-password"
                     name="password"
                     value={form.password}
                     onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoComplete="new-password"
+                    inputClassName="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="edit-password-confirm"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     新しいパスワード（確認）
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
+                    id="edit-password-confirm"
                     name="password_confirmation"
                     value={form.password_confirmation}
                     onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoComplete="new-password"
+                    inputClassName="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>

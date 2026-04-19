@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PasswordInput from '../components/PasswordInput';
 import { signUp } from '../api/client';
 import { getErrorList } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
@@ -92,17 +93,33 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {SIGNUP_FIELDS.map((field) => (
               <div key={field.name}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor={`signup-${field.name}`}
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   {field.label}
                 </label>
-                <input
-                  type={field.type}
-                  name={field.name}
-                  value={form[field.name]}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                {field.type === 'password' ? (
+                  <PasswordInput
+                    id={`signup-${field.name}`}
+                    name={field.name}
+                    value={form[field.name]}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                  />
+                ) : (
+                  <input
+                    id={`signup-${field.name}`}
+                    type={field.type}
+                    name={field.name}
+                    value={form[field.name]}
+                    onChange={handleChange}
+                    required
+                    autoComplete={field.name === 'email' ? 'email' : undefined}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                )}
               </div>
             ))}
             <button

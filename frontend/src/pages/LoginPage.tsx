@@ -1,11 +1,12 @@
-import { useSetAtom } from 'jotai';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../api/client';
-import { getErrorMessage } from '../api/errors';
-import ErrorMessage from '../components/ErrorMessage';
-import Layout from '../components/Layout';
-import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
+import { useSetAtom } from "jotai";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { login } from "../api/client";
+import { getErrorMessage } from "../api/errors";
+import ErrorMessage from "../components/ErrorMessage";
+import Layout from "../components/Layout";
+import PasswordInput from "../components/PasswordInput";
+import { authBootstrapEpochAtom, currentUserAtom } from "../store/auth";
 
 /**
  * ログイン（POST /login）。成功時に currentUserAtom を更新し、プロフィールへ navigate。
@@ -14,16 +15,16 @@ export default function LoginPage() {
   const setCurrentUser = useSetAtom(currentUserAtom);
   const bumpAuthEpoch = useSetAtom(authBootstrapEpochAtom);
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const user = await login(email, password, remember);
       // ログイン前に飛んでいた getMe の 401 が遅れて届いても currentUser を消さないよう epoch を先に進める
@@ -31,7 +32,7 @@ export default function LoginPage() {
       setCurrentUser(user);
       navigate(`/users/${user.id}`);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'ログインに失敗しました'));
+      setError(getErrorMessage(err, "ログインに失敗しました"));
     }
     setLoading(false);
   };
@@ -46,23 +47,35 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+              <label
+                htmlFor="login-email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                メールアドレス
+              </label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-              <input
-                type="password"
+              <label
+                htmlFor="login-password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                パスワード
+              </label>
+              <PasswordInput
+                id="login-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                autoComplete="current-password"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -82,18 +95,21 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? 'ログイン中...' : 'ログイン'}
+              {loading ? "ログイン中..." : "ログイン"}
             </button>
           </form>
 
           <div className="mt-4 text-center text-sm text-gray-500 space-y-1">
             <p>
-              <Link to="/password_resets/new" className="text-blue-600 hover:underline">
+              <Link
+                to="/password_resets/new"
+                className="text-blue-600 hover:underline"
+              >
                 パスワードをお忘れですか？
               </Link>
             </p>
             <p>
-              アカウントをお持ちでない方は{' '}
+              アカウントをお持ちでない方は{" "}
               <Link to="/signup" className="text-blue-600 hover:underline">
                 新規登録
               </Link>

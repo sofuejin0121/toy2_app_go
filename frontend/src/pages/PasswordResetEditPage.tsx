@@ -5,6 +5,7 @@ import { checkPasswordResetToken, resetPassword } from '../api/client';
 import { getErrorList } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
+import PasswordInput from '../components/PasswordInput';
 import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
 
 /**
@@ -91,27 +92,35 @@ export default function PasswordResetEditPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="reset-password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 新しいパスワード
               </label>
-              <input
-                type="password"
+              <PasswordInput
+                id="reset-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoComplete="new-password"
+                inputClassName="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="reset-password-confirm"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 パスワード（確認）
               </label>
-              <input
-                type="password"
+              <PasswordInput
+                id="reset-password-confirm"
                 value={passwordConfirmation}
                 onChange={(e) => setPasswordConfirmation(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoComplete="new-password"
+                inputClassName="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <button
