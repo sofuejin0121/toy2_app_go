@@ -76,6 +76,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                helperText="右のボタンで入力したパスワードの表示／非表示を切り替えられます。"
               />
             </div>
             <div className="flex items-center gap-2">

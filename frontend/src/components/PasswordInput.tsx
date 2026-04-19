@@ -8,6 +8,8 @@ type PasswordInputProps = {
   required?: boolean;
   autoComplete?: string;
   inputClassName?: string;
+  /** 入力欄の下に表示するヒント（例: 表示切替の案内） */
+  helperText?: string;
 };
 
 const defaultInputClass =
@@ -25,6 +27,7 @@ export default function PasswordInput({
   required,
   autoComplete = 'current-password',
   inputClassName = defaultInputClass,
+  helperText,
 }: PasswordInputProps) {
   const uid = useId();
   const id = idProp ?? `password-${uid}`;
@@ -43,17 +46,24 @@ export default function PasswordInput({
         required={required}
         autoComplete={autoComplete}
         spellCheck={false}
+        aria-describedby={helperText ? `${id}-hint` : undefined}
         className={inputClassName}
       />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        title={toggleLabel}
+        className="absolute right-1.5 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         aria-label={toggleLabel}
         aria-pressed={visible}
       >
         {visible ? <EyeOffIcon /> : <EyeIcon />}
       </button>
+      {helperText ? (
+        <p className="mt-1 text-xs text-gray-500" id={`${id}-hint`}>
+          {helperText}
+        </p>
+      ) : null}
     </div>
   );
 }

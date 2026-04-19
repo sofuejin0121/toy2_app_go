@@ -107,6 +107,11 @@ export default function SignupPage() {
                     onChange={handleChange}
                     required
                     autoComplete="new-password"
+                    helperText={
+                      field.name === 'password'
+                        ? '右のボタンで入力内容の表示／非表示を切り替えられます（確認欄も同様です）。'
+                        : undefined
+                    }
                   />
                 ) : (
                   <input
