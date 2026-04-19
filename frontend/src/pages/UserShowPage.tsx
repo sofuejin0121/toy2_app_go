@@ -13,19 +13,36 @@ import { currentUserAtom } from '../store/auth';
 import type { AlertState } from '../types';
 
 /**
- * プロフィール表示ページ。
- * フォロー / アンフォロー後は、手で state をいじるのではなく useSWR の mutate() を呼び出し、
- * サーバーからプロフィールを取り直します（楽観的更新より実装が単純で、数値のズレも起きにくい）。
+ * ユーザー詳細ページ（/users/:id）。
+ *
+ * データの出どころ:
+ * - URL の `:id` とページ番号 `page` を `useUserProfile` に渡す。
+ * - フック内部の useSWR が `user-${id}-page-${page}` キーで GET /api/users/:id を呼び、
+ *   ユーザー情報・フォロー状態・マイクロポスト一覧・ページネーションをまとめて取得する。
+ *
+ * フォロー / アンフォロー:
+ * - 成功後は手で `profile` の一部だけ書き換えず、`mutate()` でサーバーから取り直す（リフェッチ）。
+ *   楽観的更新よりコードが単純で、フォロワー数などの表示ズレも起きにくい。
+ *
+ * 表示上の分岐:
+ * - `currentUserAtom` … ログイン中なら User、未ログインなら null、未取得なら undefined（main の AuthLoader 経由）。
+ * - フォローボタンは「ログイン済み かつ 他人のプロフィール」のときだけ出す。
  */
 export default function UserShowPage() {
+  // App.tsx の <Route path="/users/:id" /> から来る。常に string（未定義ならフック側で key を null にしてフェッチしない）
   const { id } = useParams<{ id: string }>();
   const [currentUser] = useAtom(currentUserAtom);
+
+  // 投稿一覧のページネーション用。変わると useUserProfile の SWR キーも変わり、別ページを取りに行く
   const [page, setPage] = useState(1);
+  // フォロー API 中の二重クリック防止とボタン表示用
   const [followLoading, setFollowLoading] = useState(false);
+  // Layout 上部に出す一時メッセージ（エラー時など）
   const [alert, setAlert] = useState<AlertState | null>(null);
 
   const { profile, loading, error, mutate } = useUserProfile(id, page);
 
+  // 初回・ページ切替の取得中。プロフィール本体はまだ描画しない
   if (loading)
     return (
       <Layout>
@@ -33,6 +50,7 @@ export default function UserShowPage() {
       </Layout>
     );
 
+  // SWR の失敗やネットワークエラー。フック側で文字列に整形済み
   if (error)
     return (
       <Layout alert={alert || undefined}>
@@ -40,6 +58,7 @@ export default function UserShowPage() {
       </Layout>
     );
 
+  // 404 相当や id 不正などで API がデータを返さない場合
   if (!profile)
     return (
       <Layout alert={alert || undefined}>
@@ -54,13 +73,14 @@ export default function UserShowPage() {
     setFollowLoading(true);
     try {
       if (profile.is_following) {
+        // アンフォローは relationship の id が必要（バックエンドの設計）
         const rid = profile.relationship_id;
         if (rid == null) throw new Error('relationship_id missing');
         await unfollow(rid);
       } else {
         await follow(user.id);
       }
-      // 引数なし mutate = この key のデータをサーバーから再取得（リフェッチ）
+      // 引数なし mutate = この SWR キーのデータをサーバーから再取得（フォロー状態・数値・一覧を一括で正しい値に）
       await mutate();
     } catch (_e) {
       setAlert({ type: 'error', message: 'フォロー操作に失敗しました' });
@@ -68,10 +88,12 @@ export default function UserShowPage() {
     setFollowLoading(false);
   };
 
+  // async ハンドラを onClick に直接渡すと未処理 Promise になりやすいので分離し、失敗は握りつぶさず catch のみ
   const onFollowClick = () => {
     handleFollow().catch(() => {});
   };
 
+  // 投稿削除後に一覧をサーバーと一致させる（MicropostCard は Promise を返さないのでここで mutate）
   const onMicropostDeleted = () => {
     mutate().catch(() => {});
   };

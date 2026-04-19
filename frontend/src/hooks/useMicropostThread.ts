@@ -1,12 +1,9 @@
 /**
- * 1 件のマイクロポストと、その返信一覧を取得するフック。
+ * 1 件のマイクロポスト詳細＋返信一覧（GET /microposts/:id）。
  *
- * API（getMicropost）は 1 回のレスポンスで post + replies を返しますが、
- * SWR のキャッシュは「そのレスポンス丸ごと」1 キーに紐づきます。
- *
- * `mutate` に関数を渡すと「前のキャッシュを受け取り、新しいキャッシュを返す」更新ができます。
- * いいね後の post 更新や、返信追加で replies を触るときに revalidate: false で即座に UI を合わせます。
- * `updateIfDefined` で「キャッシュがまだ無いときは undefined のまま返す」形にし、三項のネストを減らしています。
+ * - SWR キャッシュは post + replies が一体となったオブジェクト。
+ * - setPost / setReplies … MicropostPage からいいね更新や返信追加後にキャッシュだけ部分更新するときに使う。
+ * - mutate に渡す更新関数では updateIfDefined を使い、未取得時は undefined のままにする。
  */
 import useSWR from 'swr';
 import { getMicropost } from '../api/client';

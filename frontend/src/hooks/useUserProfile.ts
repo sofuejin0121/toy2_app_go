@@ -1,11 +1,10 @@
 /**
- * ユーザープロフィール（1 人分の詳細 + 投稿一覧）を SWR で取得するフック。
+ * ユーザープロフィール（1 人分の詳細 + マイクロポスト一覧 + ページネーション）を SWR で取得。
  *
- * SWR の基本:
- * - 第 1 引数 `key` … キャッシュの識別子。文字列が変わると「別データ」として再フェッチされます。
- * - `null` を渡すと「まだ取得しない」（条件付きフェッチ）。id が無いときに使います。
- * - 第 2 引数 `fetcher` … key に対応するデータを返す Promise 関数。既存の API ラッパー（getUser）をそのまま使えます。
- * - 戻り値の `mutate` … キャッシュを手動で更新したり、サーバーに取りに行き直したりする関数です。
+ * - key: `user-${id}-page-${page}` … id かページが変わると別リクエスト。
+ * - key が null のときは id 未確定なのでフェッチしない。
+ * - fetcher は client.getUser（GET /users/:id?page=）。
+ * - mutate() … 引数なしでリフェッチ（フォロー後に UserShowPage が呼ぶ）、など。
  */
 import useSWR from 'swr';
 import { getUser } from '../api/client';

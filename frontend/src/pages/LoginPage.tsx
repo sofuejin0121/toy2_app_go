@@ -5,10 +5,14 @@ import { login } from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
-import { currentUserAtom } from '../store/auth';
+import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
 
+/**
+ * ログイン（POST /login）。成功時に currentUserAtom を更新し、プロフィールへ navigate。
+ */
 export default function LoginPage() {
   const setCurrentUser = useSetAtom(currentUserAtom);
+  const bumpAuthEpoch = useSetAtom(authBootstrapEpochAtom);
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +26,8 @@ export default function LoginPage() {
     setError('');
     try {
       const user = await login(email, password, remember);
+      // ログイン前に飛んでいた getMe の 401 が遅れて届いても currentUser を消さないよう epoch を先に進める
+      bumpAuthEpoch((n) => n + 1);
       setCurrentUser(user);
       navigate(`/users/${user.id}`);
     } catch (err: unknown) {

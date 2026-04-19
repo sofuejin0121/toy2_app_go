@@ -1,3 +1,9 @@
+/**
+ * ユーザー一覧の 1 行表示（アバター・名前・任意で削除ボタン）。
+ *
+ * - showAdmin && onDelete のときだけ削除ボタンを出す（UserListPage で管理者向けに渡す）。
+ * - 削除の実処理（API）は親が onDelete 内で行う。このコンポーネントはクリックを親へ伝えるだけ。
+ */
 import { Link } from 'react-router-dom';
 import type { User } from '../types';
 
@@ -30,6 +36,7 @@ export default function UserCard({ user, onDelete, showAdmin }: Props) {
       </div>
       {showAdmin && onDelete && (
         <button
+          type="button"
           onClick={() => onDelete(user.id)}
           className="text-xs text-red-400 hover:text-red-600 border border-red-200 px-2 py-1 rounded"
         >

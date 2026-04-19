@@ -5,6 +5,9 @@ import { getErrorMessage } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 
+/**
+ * パスワード再設定メール依頼（POST /password_resets）。成功後は送信完了 UI に切り替え。
+ */
 export default function PasswordResetNewPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);

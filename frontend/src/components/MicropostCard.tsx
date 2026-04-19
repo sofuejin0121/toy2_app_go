@@ -1,3 +1,13 @@
+/**
+ * 1 件のマイクロポストをカード表示する。
+ *
+ * このコンポーネント内で行う処理:
+ * - いいね / 解除 → like / unlike API → ローカル state と親への onUpdate で件数を同期
+ * - ブックマーク / 解除 → bookmark / unbookmark
+ * - 削除（本人 or 管理者）→ deleteMicropost → onDelete(id) で親のリストから外す等
+ *
+ * 未ログイン時はいいね・BM ボタンを無効化し、削除も出さない（currentUser で判定）。
+ */
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -27,7 +37,7 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
         const res = await unlike(post.id);
         setIsLiked(false);
         setLikeCount(res.count);
-        // API レスポンスの確定値を親リストに伝える（古い likeCount を渡さない）
+        // ホームのフィード等: 親が持つ配列上の post も最新の count / is_liked に揃える
         onUpdate?.({ ...post, is_liked: false, like_count: res.count });
       } else {
         const res = await like(post.id);
@@ -121,6 +131,7 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
           <div className="mt-2 flex items-center gap-4">
             {/* いいね */}
             <button
+              type="button"
               onClick={handleLike}
               disabled={!currentUser}
               className={`flex items-center gap-1 text-sm transition-colors ${
@@ -161,6 +172,7 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
             {/* ブックマーク */}
             {currentUser && (
               <button
+                type="button"
                 onClick={handleBookmark}
                 className={`flex items-center gap-1 text-sm transition-colors ${
                   isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'
@@ -185,6 +197,7 @@ export default function MicropostCard({ post, onDelete, onUpdate }: Props) {
             {/* 削除ボタン（自分の投稿のみ） */}
             {currentUser && (currentUser.id === post.user_id || currentUser.admin) && (
               <button
+                type="button"
                 onClick={handleDelete}
                 className="ml-auto text-xs text-gray-300 hover:text-red-400 transition-colors"
               >

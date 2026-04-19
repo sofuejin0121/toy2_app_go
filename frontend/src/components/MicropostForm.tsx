@@ -1,3 +1,10 @@
+/**
+ * 新規投稿フォーム（ホーム・返信スレッドで再利用）。
+ *
+ * - FormData で本文・任意の画像・返信先 in_reply_to_id を POST /microposts へ送る。
+ * - 成功時は onCreated で親に Micropost を渡し、親がリスト先頭に追加する等する。
+ * - 未ログインなら null を返して何も出さない（ホームのゲスト表示では非表示）。
+ */
 import { useAtom } from 'jotai';
 import { useRef, useState } from 'react';
 import { createMicropost } from '../api/client';

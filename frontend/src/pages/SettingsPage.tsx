@@ -3,11 +3,10 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import SettingsToggleRow from '../components/SettingsToggleRow';
 import { useSettings } from '../hooks/useSettings';
 
+/**
+ * メール通知の ON/OFF（ProtectedRoute）。useSettings で SWR + PATCH、トグルは SettingsToggleRow。
+ */
 export default function SettingsPage() {
-  // 通知設定の読み込みと保存を管理するカスタムフック
-  // settings - 現在の設定値
-  // patchSettings - チェックボックスの変更をキャッシュ上に部分的に反映する関数
-  // save - 保存ボタン押下時に API へ送信する関数
   const { settings, patchSettings, loading, saving, alert, save } = useSettings();
 
   if (loading)

@@ -5,13 +5,17 @@ import { activateAccount } from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
-import { currentUserAtom } from '../store/auth';
+import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
 
+/**
+ * メール内リンクからのアカウント有効化（GET + token/email）。成功時に atom を更新しプロフィールへ遷移。
+ */
 export default function AccountActivationPage() {
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
   const setCurrentUser = useSetAtom(currentUserAtom);
+  const bumpAuthEpoch = useSetAtom(authBootstrapEpochAtom);
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
@@ -24,6 +28,7 @@ export default function AccountActivationPage() {
     }
     activateAccount(token, email)
       .then((data) => {
+        bumpAuthEpoch((n) => n + 1);
         setCurrentUser(data.user);
         setStatus('success');
         setMessage(data.message);
@@ -33,7 +38,7 @@ export default function AccountActivationPage() {
         setStatus('error');
         setMessage(getErrorMessage(err, '有効化に失敗しました'));
       });
-  }, [token, email, setCurrentUser, navigate]);
+  }, [token, email, setCurrentUser, bumpAuthEpoch, navigate]);
 
   return (
     <Layout>

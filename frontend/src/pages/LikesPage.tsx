@@ -9,6 +9,9 @@ import UserStatBar from '../components/UserStatBar';
 import { useUserLikes } from '../hooks/useUserLikes';
 import { updateIfDefined } from '../utils/updateIfDefined';
 
+/**
+ * いいねした投稿一覧（ProtectedRoute）。useUserLikes と同じレイアウトで MicropostCard の削除時に mutate。
+ */
 export default function LikesPage() {
   const { id } = useParams<{ id: string }>();
   const [page, setPage] = useState(1);

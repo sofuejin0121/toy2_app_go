@@ -2,6 +2,9 @@ import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAdminStats } from '../hooks/useAdminStats';
 
+/**
+ * 管理者ダッシュボード（AdminRoute）。useAdminStats で集計を表示し、棒グラフは maxCount で正規化。
+ */
 export default function AdminPage() {
   const { stats, loading } = useAdminStats();
 

@@ -1,3 +1,11 @@
+/**
+ * ページネーション UI（‹ 1 2 … 10 ›）。
+ *
+ * - pagination オブジェクト（current_page, total_pages, has_prev, has_next 等）を受け取る。
+ * - total_pages が 1 以下なら何も描画しない。
+ * - ページ番号が多いときは両端と現在付近を表示し、省略箇所に「…」を挟む（pages 配列を組み立ててから map）。
+ * - 親の onPageChange に番号を渡し、親が useState(page) を更新 → SWR の key 変更で再フェッチ、という流れが典型。
+ */
 import type { Pagination as PaginationType } from '../types';
 
 interface Props {
@@ -29,6 +37,7 @@ export default function Pagination({ pagination, onPageChange }: Props) {
   return (
     <div className="flex items-center justify-center gap-1 mt-6">
       <button
+        type="button"
         onClick={() => onPageChange(current_page - 1)}
         disabled={!has_prev}
         className="px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -60,6 +69,7 @@ export default function Pagination({ pagination, onPageChange }: Props) {
         );
       })}
       <button
+        type="button"
         onClick={() => onPageChange(current_page + 1)}
         disabled={!has_next}
         className="px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"

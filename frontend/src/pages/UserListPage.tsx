@@ -9,6 +9,9 @@ import { useUserList } from '../hooks/useUserList';
 import { currentUserAtom } from '../store/auth';
 import { updateIfDefined } from '../utils/updateIfDefined';
 
+/**
+ * ユーザー一覧・検索（ProtectedRoute）。inputQuery と query を分け、検索実行時に page を 1 に戻す。
+ */
 export default function UserListPage() {
   const [currentUser] = useAtom(currentUserAtom);
   const [page, setPage] = useState(1);

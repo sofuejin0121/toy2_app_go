@@ -14,6 +14,10 @@ const SIGNUP_FIELDS: { name: SignupFieldName; label: string; type: string }[] = 
   { name: 'password_confirmation', label: 'パスワード（確認）', type: 'password' },
 ];
 
+/**
+ * 新規登録（POST /users）。成功時は確認メール案内 UI、失敗時は getErrorList で複数エラー表示。
+ * SIGNUP_FIELDS で name の型を固定し、フォーム値へのアクセスで as を不要にしている。
+ */
 export default function SignupPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({

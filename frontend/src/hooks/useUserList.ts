@@ -1,8 +1,8 @@
 /**
- * ユーザー一覧（検索クエリ query と page が key に入る）。
- * 検索ボタンで query が変わると SWR が別キャッシュとして扱うため、古い結果と混ざりません。
+ * ユーザー一覧＋検索（GET /users?page=&q=）。
  *
- * mutate は管理者がユーザーを削除したあと、一覧からその行だけ除く用途などで使います。
+ * - SWR key に page と query の両方を含める → 検索語やページが変わるたびに自動で再フェッチ。
+ * - mutate は削除後に一覧キャッシュから 1 行除くなど、UserListPage から `updateIfDefined` と組み合わせて使う。
  */
 import useSWR from 'swr';
 import { listUsers } from '../api/client';

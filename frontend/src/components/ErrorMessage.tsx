@@ -1,3 +1,13 @@
+/**
+ * エラー文言の表示用プレゼンテーションコンポーネント。
+ *
+ * Props の使い分け:
+ * - message … 1 件だけ出したいとき
+ * - messages … 複数行（バリデーションの配列）。message より優先される
+ * - variant … 'box'（枠付き・ページ上部向け） / 'inline'（フォーム直下の小さめテキスト）
+ *
+ * データ取得はしない。親が getErrorMessage / getErrorList の結果を渡す。
+ */
 interface Props {
   message?: string;
   messages?: string[];

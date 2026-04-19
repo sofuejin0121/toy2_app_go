@@ -7,6 +7,9 @@ import MicropostForm from '../components/MicropostForm';
 import { useMicropostThread } from '../hooks/useMicropostThread';
 import { currentUserAtom } from '../store/auth';
 
+/**
+ * 1 投稿＋返信スレッド（/microposts/:id）。useMicropostThread で取得、返信は MicropostForm + setReplies。
+ */
 export default function MicropostPage() {
   const { id } = useParams<{ id: string }>();
   const [currentUser] = useAtom(currentUserAtom);

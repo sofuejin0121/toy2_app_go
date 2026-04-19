@@ -8,6 +8,10 @@ import UserCard from '../components/UserCard';
 import UserStatBar from '../components/UserStatBar';
 import { useFollowList } from '../hooks/useFollowList';
 
+/**
+ * フォロー中 or フォロワー一覧（/users/:id/following | /followers）。
+ * 同じコンポーネントで mode だけ切り替え、useFollowList が API と SWR key を切り替える。
+ */
 interface Props {
   mode: 'following' | 'followers';
 }

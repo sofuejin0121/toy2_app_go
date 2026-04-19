@@ -1,3 +1,9 @@
+/**
+ * プロフィール横に並ぶ「投稿数・フォロー・フォロワー・いいね・（本人なら）ブックマーク」のリンク群。
+ *
+ * - データは UserStatSummary 型（UserProfile の一部フィールドと同形）で受け取る。
+ * - 各数値は Link で対応する一覧ページ（/users/:id/following 等）へ遷移する。
+ */
 import { Link } from 'react-router-dom';
 import type { UserStatSummary } from '../types';
 

@@ -1,4 +1,9 @@
-/** 通知設定などで使う iOS 風トグル。長い Tailwind（peer / after）をページから隔離する。 */
+/**
+ * 通知設定（SettingsPage）で使う iOS 風トグル 1 行分。
+ *
+ * - 見た目の複雑な Tailwind（peer / after 擬似要素）を TRACK_CLASS に閉じ、ページ側は title と checked だけ渡す。
+ * - 実体は非表示の checkbox（sr-only）＋ label でクリック領域を確保するパターン。
+ */
 const TRACK_CLASS =
   'w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all';
 

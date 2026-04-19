@@ -9,6 +9,9 @@ import UserStatBar from '../components/UserStatBar';
 import { useUserBookmarks } from '../hooks/useUserBookmarks';
 import { updateIfDefined } from '../utils/updateIfDefined';
 
+/**
+ * ブックマーク一覧（OwnerRoute 保護）。useUserBookmarks + 削除時は mutate でキャッシュから 1 件除去。
+ */
 export default function BookmarksPage() {
   const { id } = useParams<{ id: string }>();
   const [page, setPage] = useState(1);

@@ -4,7 +4,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import { timeAgo } from '../utils/timeAgo';
 
-// 通知の種類に応じたラベルを返す
+// 通知の種類に応じたラベルを返す（API の action_type 文字列を人が読める日本語に）
 function actionLabel(type: string): string {
   switch (type) {
     case 'like':
@@ -16,8 +16,10 @@ function actionLabel(type: string): string {
   }
 }
 
+/**
+ * 通知一覧（ProtectedRoute）。useNotifications の deleteOne で一覧キャッシュを部分更新。
+ */
 export default function NotificationsPage() {
-  // 通知一覧を取得し、削除機能を提供するカスタムフック
   const { notifications, loading, deleteOne } = useNotifications();
 
   return (
@@ -61,6 +63,7 @@ export default function NotificationsPage() {
                   <p className="text-xs text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => deleteOne(n.id)}
                   className="text-xs text-gray-300 hover:text-red-400 shrink-0"
                 >

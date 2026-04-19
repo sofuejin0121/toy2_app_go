@@ -1,3 +1,13 @@
+/**
+ * バックエンド API への HTTP 呼び出しをまとめたモジュール。
+ *
+ * - axios インスタンス `api` に baseURL・Cookie（withCredentials）・JSON ヘッダを設定。
+ * - 各 export は「どのパスに何を送るか」と「レスポンスの型」を 1 関数に閉じ込める。
+ * - 画面や SWR の fetcher はここを呼ぶだけにし、URL 文字列の重複を避ける。
+ *
+ * 環境:
+ * - VITE_API_BASE_URL があれば `${それ}/api`、無ければ同一オリジンの `/api`（プロキシ前提の開発など）。
+ */
 import axios from 'axios';
 import type {
   AdminStats,
@@ -16,6 +26,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL
   ? `${import.meta.env.VITE_API_BASE_URL}/api`
   : '/api';
 
+// withCredentials: true … セッション Cookie を付与する（ログイン状態の維持に必須）
 const api = axios.create({
   baseURL,
   withCredentials: true,

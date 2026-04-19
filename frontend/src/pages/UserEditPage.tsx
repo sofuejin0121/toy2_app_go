@@ -10,7 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { currentUserAtom } from '../store/auth';
 
 /**
- * プロフィール編集。認可は App.tsx の OwnerRoute が担当。
+ * プロフィール編集（OwnerRoute）。認可は App.tsx の OwnerRoute が担当。
  *
  * 初期表示用に useSWR で getUser を呼びます（編集に必要なのは user 部分だけだが、既存 API を流用）。
  * SWR がバックグラウンドで再検証しても、入力途中のフォームを上書きしないよう ref で「この id には初回だけ反映」と制御しています。

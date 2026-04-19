@@ -1,9 +1,9 @@
 /**
- * フォロー中 / フォロワー一覧。
- * mode と id と page が変わるたびに key が変わり、SWR が別データとして扱います。
+ * フォロー中 / フォロワー一覧（GET .../following または .../followers）。
  *
- * API の生レスポンスを UserStatBar が期待する UserStatSummary 形に組み立てています。
- * バックエンドが liked_count などを返すようになったので、フロントで 0 埋めする必要はありません。
+ * - `mode` と URL の `id` と `page` が SWR の key に入るため、切り替えのたびに別キャッシュとして扱われる。
+ * - id が無いときは key を null にしてフェッチしない（型安全のためのガード）。
+ * - 返却する statSummary は UserStatBar 用に、API のトップレベル user と各 count をまとめたオブジェクト。
  */
 import useSWR from 'swr';
 import { getFollowers, getFollowing } from '../api/client';

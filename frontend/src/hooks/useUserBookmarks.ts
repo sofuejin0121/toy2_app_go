@@ -1,10 +1,9 @@
 /**
- * ブックマーク一覧。
+ * ブックマーク一覧（GET /users/:id/bookmarks）。
  *
- * 「本人以外はこの URL を開けない」という判定は App.tsx の OwnerRoute に任せ、
- * フックは id と page だけ見てフェッチします。フック内で navigate しなくてよくなります。
- *
- * 返す mutate は、一覧から 1 件消すなどローカル更新に使えます（BookmarksPage 参照）。
+ * - 認可（本人だけ）は App.tsx の OwnerRoute に任せ、フックはフェッチだけ担当する。
+ * - statSummary の is_current_user は常に true（ブックマークは本人画面のみ想定）。
+ * - mutate で一覧キャッシュを部分更新できる（BookmarksPage の削除後など）。
  */
 import useSWR from 'swr';
 import { getUserBookmarks } from '../api/client';

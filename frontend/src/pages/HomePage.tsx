@@ -12,6 +12,7 @@ import { useFeed } from '../hooks/useFeed';
 import { currentUserAtom } from '../store/auth';
 import type { Micropost, Pagination as PaginationMeta } from '../types';
 
+/** HomePage 内サブコンポーネント用: フィード・ページネーション・削除/更新コールバックを受け取る */
 interface HomeFeedSectionProps {
   loading: boolean;
   feed: { items: Micropost[]; pagination: PaginationMeta } | null;
@@ -20,7 +21,10 @@ interface HomeFeedSectionProps {
   onPageChange: (page: number) => void;
 }
 
-/** フィード本体: 三項のネストを避け、状態ごとに return で分岐する */
+/**
+ * ログイン後メインカラムのフィード部分。
+ * ローディング / 空 / 一覧を三項のネストなしで early return 分岐する。
+ */
 function HomeFeedSection({
   loading,
   feed,
@@ -63,6 +67,9 @@ function HomeFeedSection({
   );
 }
 
+/**
+ * トップページ（/）。currentUser の undefined / null / User で表示を完全に分岐し、ログイン後は useFeed。
+ */
 export default function HomePage() {
   const [currentUser] = useAtom(currentUserAtom);
   const [page, setPage] = useState(1);

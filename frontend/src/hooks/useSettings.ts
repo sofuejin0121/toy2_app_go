@@ -1,9 +1,9 @@
 /**
- * 通知設定の取得（SWR）と保存（通常の async 関数）。
+ * メール通知設定（GET/PATCH /settings）。
  *
- * - 読み込み: useSWR('settings', getSettings) … マウント時に自動フェッチ、タブ復帰時の再検証は SWR のデフォルト動作に任せる。
- * - チェックボックス: patchSettings でキャッシュ上の settings を部分的に書き換える（React の setState より単純な引数だけ）。
- * - 保存成功後: mutate(updated, { revalidate: false }) でサーバーと同じ内容をキャッシュに直接書き込み、余計な GET を避ける。
+ * - 読み込み: useSWR('settings', getSettings)。チェック変更は patchSettings でキャッシュのみ即時反映。
+ * - save: PATCH 成功後に mutate(updated, { revalidate: false }) でサーバー応答とキャッシュを一致させ、余計な GET を避ける。
+ * - alert: Layout に渡す成功・失敗メッセージ用（SettingsPage が表示）。
  */
 import { useState } from 'react';
 import useSWR from 'swr';

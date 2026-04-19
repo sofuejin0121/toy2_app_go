@@ -1,8 +1,18 @@
-import { useAtom } from 'jotai';
+/**
+ * 共通レイアウト（ヘッダー付きのページ枠）。
+ *
+ * 担当する処理:
+ * - currentUserAtom を見て、ログイン済みならナビ・プロフィールリンク・通知・設定・Admin・ログアウトを表示
+ * - 未ログインならログイン / 新規登録リンクのみ
+ * - モバイル用ハンバーガーメニューの開閉
+ * - `alert` prop があれば main 上部に成功・エラー等の帯を表示（UserShowPage / SettingsPage などから渡す）
+ * - ログアウト: API の logout → atom を null → /login へ遷移
+ */
+import { useAtom, useSetAtom } from 'jotai';
 import { type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../api/client';
-import { currentUserAtom } from '../store/auth';
+import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
 import type { AlertState } from '../types';
 
 interface LayoutProps {
@@ -12,11 +22,13 @@ interface LayoutProps {
 
 export default function Layout({ children, alert }: LayoutProps) {
   const [currentUser, setCurrentUser] = useAtom(currentUserAtom);
+  const bumpAuthEpoch = useSetAtom(authBootstrapEpochAtom);
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
+    bumpAuthEpoch((n) => n + 1);
     setCurrentUser(null);
     navigate('/login');
   };

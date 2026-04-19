@@ -5,13 +5,18 @@ import { checkPasswordResetToken, resetPassword } from '../api/client';
 import { getErrorList } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
-import { currentUserAtom } from '../store/auth';
+import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
 
+/**
+ * メール内リンクから遷移するパスワード再設定（トークン・email を検証してから PATCH）。
+ * 成功時はログイン済みとして currentUserAtom を更新しプロフィールへ。
+ */
 export default function PasswordResetEditPage() {
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
   const setCurrentUser = useSetAtom(currentUserAtom);
+  const bumpAuthEpoch = useSetAtom(authBootstrapEpochAtom);
   const navigate = useNavigate();
   const [valid, setValid] = useState<boolean | null>(null);
   const [password, setPassword] = useState('');
@@ -40,6 +45,7 @@ export default function PasswordResetEditPage() {
         password,
         password_confirmation: passwordConfirmation,
       });
+      bumpAuthEpoch((n) => n + 1);
       setCurrentUser(data.user);
       navigate(`/users/${data.user.id}`);
     } catch (err: unknown) {
@@ -63,6 +69,7 @@ export default function PasswordResetEditPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-2">無効なリンク</h2>
             <p className="text-gray-600 text-sm">このリンクは無効または期限切れです</p>
             <button
+              type="button"
               onClick={() => navigate('/password_resets/new')}
               className="mt-4 text-blue-600 hover:underline text-sm"
             >

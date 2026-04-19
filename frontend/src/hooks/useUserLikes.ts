@@ -1,6 +1,9 @@
 /**
- * 指定ユーザーが「いいね」した投稿一覧。
- * id または page が変わると key が変わり、自動で再フェッチされます（useEffect の依存配列が不要な理由）。
+ * 指定ユーザーが「いいね」した投稿一覧（GET /users/:id/likes）。
+ *
+ * - id / page が変わると SWR key が変わり、useEffect なしで新データを取りに行く。
+ * - statSummary はサイドバーの UserStatBar 用に API レスポンスから組み立てる。
+ * - mutate を LikesPage が受け取り、一覧から 1 件削除するローカル更新に使う。
  */
 import useSWR from 'swr';
 import { getUserLikes } from '../api/client';

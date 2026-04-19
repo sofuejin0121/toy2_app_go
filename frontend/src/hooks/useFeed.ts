@@ -1,15 +1,18 @@
 /**
- * ホームのフィード用フック。
+ * ホームのフィード用フック（ログイン済みユーザー向け）。
  *
- * 以前は 1 つの useEffect で Promise.all していましたが、SWR では「データの塊ごと」に useSWR を分けます。
- * - フィード本体 … `feed-page-${page}`
- * - サイドバー用プロフィール … `feed-profile-${userId}`
- * それぞれ独立してキャッシュ・再取得されるので、片方だけ失敗したときの扱いもしやすくなります。
+ * useSWR を 2 つに分ける理由:
+ * - フィード本体 … key `feed-page-${page}` → getFeed（投稿一覧）
+ * - サイドバー用 … key `feed-profile-${userId}` → getUser（UserStatBar に必要な統計）
+ * 失敗・再取得を独立させ、ゲスト（currentUser === null）では key を null にしてフェッチしない。
  *
- * mutate と revalidate: false:
- * - 投稿直後など「サーバーに取りに行かず、今のキャッシュだけ手で直す」ときに使います。
- * - 再フェッチしたいときは `mutate()` だけ呼ぶ（オプション省略）など、別の書き方もできます。
- * - 下の `mutateFeed((prev) => updateIfDefined(prev, ...))` は、未取得の prev では何もしない安全な更新パターンです。
+ * SWR オプション:
+ * - 以前: main の SWRConfig の dedupingInterval: 2000 のみ。直前の 401 などがキャッシュに残ったまま
+ *   別ページからすぐホームに戻ると、dedupe で再フェッチされず古いエラーが表示され得た。
+ * - 今回: このフックだけ dedupingInterval: 0 にし、ホームに戻るたびに最新の HTTP を取りに行く。
+ *
+ * addPost / removePost / updatePost:
+ * - mutateFeed に関数を渡し、updateIfDefined で「キャッシュ未取得なら触らない」更新をする（revalidate: false）。
  */
 import useSWR from 'swr';
 import { getFeed, getUser } from '../api/client';
@@ -27,9 +30,11 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
   const feedKey = currentUser ? `feed-page-${page}` : null;
   const profileKey = currentUser ? `feed-profile-${currentUser.id}` : null;
 
+  const swrDedupeOff = { dedupingInterval: 0 };
+
   const { data: feed, isLoading: loadingFeed, error: errFeed, mutate: mutateFeed } = useSWR<
     FeedData | undefined
-  >(feedKey, () => getFeed(page));
+  >(feedKey, () => getFeed(page), swrDedupeOff);
 
   const { data: profile, isLoading: loadingProfile, error: errProfile } = useSWR(
     profileKey,
@@ -38,6 +43,7 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
       if (!currentUser) throw new Error('feed profile requires login');
       return getUser(currentUser.id);
     },
+    swrDedupeOff,
   );
 
   // ゲスト（null）や未取得（undefined）のときは「フィード用ローディング」を出さない
@@ -49,7 +55,7 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
 
   function addPost(post: Micropost) {
     mutateFeed((prev) => updateIfDefined(prev, (p) => ({ ...p, items: [post, ...p.items] })), {
-      revalidate: false,
+      revalidate: false, //フィードのキャッシュを更新しない
     });
   }
 
