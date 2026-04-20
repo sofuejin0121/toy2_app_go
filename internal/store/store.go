@@ -32,6 +32,15 @@ func New(dbPath string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+	// ローカル SQLite のみ。短時間の同時アクセスで SQLITE_BUSY → 500 になり得るため待機を入れる。
+	// libsql / Turso では PRAGMA が無効なためスキップする。
+	if driver == "sqlite" {
+		if _, err := db.Exec("PRAGMA busy_timeout = 8000"); err != nil {
+			db.Close()
+			return nil, err
+		}
+		_, _ = db.Exec("PRAGMA journal_mode = WAL")
+	}
 	return &Store{db: db}, nil
 }
 

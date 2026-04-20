@@ -7,13 +7,14 @@
  * 失敗・再取得を独立させ、ゲスト（currentUser === null）では key を null にしてフェッチしない。
  *
  * SWR オプション:
- * - 以前: main の SWRConfig の dedupingInterval: 2000 のみ。直前の 401 などがキャッシュに残ったまま
- *   別ページからすぐホームに戻ると、dedupe で再フェッチされず古いエラーが表示され得た。
- * - 今回: このフックだけ dedupingInterval: 0 にし、ホームに戻るたびに最新の HTTP を取りに行く。
+ * - dedupingInterval: 0 … ホームに戻るたびに最新の HTTP を取りに行く。
+ * - リトライ … Render コールドスタートや一時的な DB 競合で /api/feed が 500 になることがあるため、
+ *   401/403/404 以外は指数バックオフで再試行する（ホームだけが同時に 2 API を叩くため他ページより失敗しやすい）。
  *
  * addPost / removePost / updatePost:
  * - mutateFeed に関数を渡し、updateIfDefined で「キャッシュ未取得なら触らない」更新をする（revalidate: false）。
  */
+import axios from 'axios';
 import useSWR from 'swr';
 import { getFeed, getUser } from '../api/client';
 import { getErrorMessage } from '../api/errors';
@@ -25,16 +26,30 @@ interface FeedData {
   pagination: Pagination;
 }
 
+function shouldRetrySwrError(err: unknown): boolean {
+  if (axios.isAxiosError(err)) {
+    const s = err.response?.status;
+    if (s === 401 || s === 403 || s === 404) return false;
+  }
+  return true;
+}
+
+const swrHomeOpts = {
+  dedupingInterval: 0,
+  errorRetryCount: 6,
+  /** 指数バックオフ相当に近づけるため徐々に長く（SWR の型は number のみ） */
+  errorRetryInterval: 2500,
+  shouldRetryOnError: shouldRetrySwrError,
+};
+
 export function useFeed(currentUser: User | null | undefined, page: number) {
   // 未ログインのときは key を null にして、SWR にフェッチさせない
   const feedKey = currentUser ? `feed-page-${page}` : null;
   const profileKey = currentUser ? `feed-profile-${currentUser.id}` : null;
 
-  const swrDedupeOff = { dedupingInterval: 0 };
-
   const { data: feed, isLoading: loadingFeed, error: errFeed, mutate: mutateFeed } = useSWR<
     FeedData | undefined
-  >(feedKey, () => getFeed(page), swrDedupeOff);
+  >(feedKey, () => getFeed(page), swrHomeOpts);
 
   const { data: profile, isLoading: loadingProfile, error: errProfile } = useSWR(
     profileKey,
@@ -43,7 +58,7 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
       if (!currentUser) throw new Error('feed profile requires login');
       return getUser(currentUser.id);
     },
-    swrDedupeOff,
+    swrHomeOpts,
   );
 
   // ゲスト（null）や未取得（undefined）のときは「フィード用ローディング」を出さない
