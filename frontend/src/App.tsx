@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import LikesPage from './pages/LikesPage';
 import LoginPage from './pages/LoginPage';
 import MicropostPage from './pages/MicropostPage';
+import NotFoundPage from './pages/NotFoundPage';
 import NotificationsPage from './pages/NotificationsPage';
 import PasswordResetEditPage from './pages/PasswordResetEditPage';
 import PasswordResetNewPage from './pages/PasswordResetNewPage';
@@ -156,7 +157,7 @@ export default function App() {
       <Route path="/account_activations/:token/edit" element={<AccountActivationPage />} />
       <Route path="/password_resets/new" element={<PasswordResetNewPage />} />
       <Route path="/password_resets/:token/edit" element={<PasswordResetEditPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
