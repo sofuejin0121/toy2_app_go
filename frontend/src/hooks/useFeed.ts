@@ -8,13 +8,14 @@
  *
  * SWR オプション:
  * - dedupingInterval: 0 … ホームに戻るたびに最新の HTTP を取りに行く。
- * - リトライ … Render コールドスタートや一時的な DB 競合で /api/feed が 500 になることがあるため、
- *   401/403/404 以外は指数バックオフで再試行する（ホームだけが同時に 2 API を叩くため他ページより失敗しやすい）。
+ * - リトライ … 一時的な 5xx 向け。401/403/404 はリトライしない。
+ * - 表示用エラー … 再取得中（isValidating）は画面に出さず、短い遅延後にのみ出す（一瞬の赤文字を防ぐ）。
  *
  * addPost / removePost / updatePost:
  * - mutateFeed に関数を渡し、updateIfDefined で「キャッシュ未取得なら触らない」更新をする（revalidate: false）。
  */
 import axios from 'axios';
+import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { getFeed, getUser } from '../api/client';
 import { getErrorMessage } from '../api/errors';
@@ -47,11 +48,20 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
   const feedKey = currentUser ? `feed-page-${page}` : null;
   const profileKey = currentUser ? `feed-profile-${currentUser.id}` : null;
 
-  const { data: feed, isLoading: loadingFeed, error: errFeed, mutate: mutateFeed } = useSWR<
-    FeedData | undefined
-  >(feedKey, () => getFeed(page), swrHomeOpts);
+  const {
+    data: feed,
+    isLoading: loadingFeed,
+    isValidating: validatingFeed,
+    error: errFeed,
+    mutate: mutateFeed,
+  } = useSWR<FeedData | undefined>(feedKey, () => getFeed(page), swrHomeOpts);
 
-  const { data: profile, isLoading: loadingProfile, error: errProfile } = useSWR(
+  const {
+    data: profile,
+    isLoading: loadingProfile,
+    isValidating: validatingProfile,
+    error: errProfile,
+  } = useSWR(
     profileKey,
     () => {
       // profileKey が付いている時点で currentUser は存在する想定だが、型のため明示的にチェック
@@ -61,12 +71,32 @@ export function useFeed(currentUser: User | null | undefined, page: number) {
     swrHomeOpts,
   );
 
-  // ゲスト（null）や未取得（undefined）のときは「フィード用ローディング」を出さない
+  const validating = validatingFeed || validatingProfile;
+
+  // ゲスト（null）や未取得（undefined）のときは「フィード用ローディング」を出さない。
+  // データ未取得のまま再検証中（リトライ含む）も読み込み扱いにし、エラー文言のチラつきを抑える。
   const loading =
-    currentUser !== undefined && currentUser !== null && (loadingFeed || loadingProfile);
+    currentUser !== undefined &&
+    currentUser !== null &&
+    (loadingFeed ||
+      loadingProfile ||
+      ((!feed || !profile) && validating));
 
   const rawError = errFeed ?? errProfile;
-  const error = rawError ? getErrorMessage(rawError, 'フィードの取得に失敗しました') : null;
+  const tentativeError = useMemo(() => {
+    if (!rawError || validating) return null;
+    return getErrorMessage(rawError, 'フィードの取得に失敗しました');
+  }, [rawError, validating]);
+
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!tentativeError) {
+      setError(null);
+      return;
+    }
+    const id = window.setTimeout(() => setError(tentativeError), 400);
+    return () => window.clearTimeout(id);
+  }, [tentativeError]);
 
   function addPost(post: Micropost) {
     mutateFeed((prev) => updateIfDefined(prev, (p) => ({ ...p, items: [post, ...p.items] })), {
