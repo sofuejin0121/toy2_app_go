@@ -5,7 +5,9 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"os"
 	"strconv"
@@ -49,6 +51,41 @@ func cookieSameSite() http.SameSite { return CookieSameSite() }
 // cookieSecure は内部用エイリアス
 func cookieSecure() bool { return IsCrossOrigin() }
 
+// isTransientUserLookupError はセッション解決の GetUser を再試行してよい一時エラーか判定する。
+// SQLite の locked / busy や libsql の一時的な失敗で、Cookie は有効なのに 401 になるチラつきを防ぐ。
+func isTransientUserLookupError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "busy") ||
+		strings.Contains(msg, "locked") ||
+		strings.Contains(msg, "sqlite_busy") ||
+		strings.Contains(msg, "unable to open") ||
+		strings.Contains(msg, "temporary")
+}
+
+// getUserForSession は Auth 用にユーザーを読み、一時的な DB エラーでは数回まで再試行する。
+func getUserForSession(s *store.Store, id int64) (*model.User, error) {
+	const maxAttempts = 6
+	var lastErr error
+	for i := 0; i < maxAttempts; i++ {
+		u, err := s.GetUser(id)
+		if err == nil {
+			return u, nil
+		}
+		lastErr = err
+		if !isTransientUserLookupError(err) || i == maxAttempts-1 {
+			return nil, err
+		}
+		time.Sleep(time.Duration(20+40*i) * time.Millisecond)
+	}
+	return nil, lastErr
+}
+
 // Auth はセッションCookieからユーザーを解決し、CSRFトークンも扱うミドルウェア
 // なぜ3層のネストになるのか？
 // Auth(store) storeを受け取る(DBアクセスに必要)
@@ -64,7 +101,7 @@ func Auth(s *store.Store) func(http.Handler) http.Handler {
             if userIDStr != "" {
                 id, err := strconv.ParseInt(userIDStr, 10, 64)
                 if err == nil {
-                    user, err := s.GetUser(id)
+                    user, err := getUserForSession(s, id)
                     if err == nil {
                         ctx = context.WithValue(ctx, CurrentUserKey, user)
                     }
@@ -75,7 +112,7 @@ func Auth(s *store.Store) func(http.Handler) http.Handler {
             if ctx.Value(CurrentUserKey) == nil {
                 if userID, ok := VerifyUserID(
                     GetCookieValue(r, "remember_user_id")); ok && userID != 0 {
-                    user, err := s.GetUser(userID)
+                    user, err := getUserForSession(s, userID)
                     rememberToken := GetCookieValue(r, "remember_token")
                     if err == nil && rememberToken != "" &&
                         user.Authenticated("remember",rememberToken) {
