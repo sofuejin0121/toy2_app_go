@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { currentUserAtom } from '../store/auth';
 import type { AlertState } from '../types';
@@ -41,6 +42,10 @@ export default function UserShowPage() {
   const [alert, setAlert] = useState<AlertState | null>(null);
 
   const { profile, loading, error, mutate } = useUserProfile(id, page);
+
+  const docTitle =
+    loading || error || !profile ? 'ユーザー' : profile.user.name;
+  useDocumentTitle(docTitle);
 
   // 初回・ページ切替の取得中。プロフィール本体はまだ描画しない
   if (loading)

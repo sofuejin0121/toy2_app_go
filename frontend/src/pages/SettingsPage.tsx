@@ -1,6 +1,7 @@
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SettingsToggleRow from '../components/SettingsToggleRow';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSettings } from '../hooks/useSettings';
 
 /**
@@ -8,6 +9,8 @@ import { useSettings } from '../hooks/useSettings';
  */
 export default function SettingsPage() {
   const { settings, patchSettings, loading, saving, alert, save } = useSettings();
+
+  useDocumentTitle('設定');
 
   if (loading)
     return (

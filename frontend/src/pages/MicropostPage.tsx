@@ -4,7 +4,9 @@ import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import MicropostForm from '../components/MicropostForm';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useMicropostThread } from '../hooks/useMicropostThread';
+import { micropostTabTitle } from '../lib/documentTitle';
 import { currentUserAtom } from '../store/auth';
 
 /**
@@ -16,6 +18,9 @@ export default function MicropostPage() {
 
   // 投稿本文とリプライ一覧を取得するカスタムフック
   const { post, setPost, replies, setReplies, loading } = useMicropostThread(id);
+
+  const docTitle = loading || !post ? '投稿' : micropostTabTitle(post.content);
+  useDocumentTitle(docTitle);
 
   if (loading)
     return (

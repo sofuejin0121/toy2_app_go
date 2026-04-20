@@ -1,5 +1,6 @@
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useAdminStats } from '../hooks/useAdminStats';
 
 /**
@@ -7,6 +8,8 @@ import { useAdminStats } from '../hooks/useAdminStats';
  */
 export default function AdminPage() {
   const { stats, loading } = useAdminStats();
+
+  useDocumentTitle('管理');
 
   if (loading)
     return (

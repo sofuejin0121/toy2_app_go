@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useNotifications } from '../hooks/useNotifications';
 import { timeAgo } from '../utils/timeAgo';
 
@@ -20,6 +21,7 @@ function actionLabel(type: string): string {
  * 通知一覧（ProtectedRoute）。useNotifications の deleteOne で一覧キャッシュを部分更新。
  */
 export default function NotificationsPage() {
+  useDocumentTitle('通知');
   const { notifications, loading, deleteOne } = useNotifications();
 
   return (

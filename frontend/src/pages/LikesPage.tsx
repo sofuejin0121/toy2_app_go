@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useUserLikes } from '../hooks/useUserLikes';
 import { updateIfDefined } from '../utils/updateIfDefined';
 
@@ -17,6 +18,11 @@ export default function LikesPage() {
   const [page, setPage] = useState(1);
 
   const { posts, statSummary, pagination, loading, error, mutate } = useUserLikes(id, page);
+
+  const docTitle = statSummary?.user
+    ? `${statSummary.user.name}のいいね`
+    : 'いいねした投稿';
+  useDocumentTitle(docTitle);
 
   return (
     <Layout>

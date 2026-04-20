@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import MicropostCard from '../components/MicropostCard';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useUserBookmarks } from '../hooks/useUserBookmarks';
 import { updateIfDefined } from '../utils/updateIfDefined';
 
@@ -17,6 +18,11 @@ export default function BookmarksPage() {
   const [page, setPage] = useState(1);
 
   const { posts, statSummary, pagination, loading, error, mutate } = useUserBookmarks(id, page);
+
+  const docTitle = statSummary?.user
+    ? `${statSummary.user.name}のブックマーク`
+    : 'ブックマーク';
+  useDocumentTitle(docTitle);
 
   return (
     <Layout>

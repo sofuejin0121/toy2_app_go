@@ -6,12 +6,14 @@ import { getErrorMessage } from "../api/errors";
 import ErrorMessage from "../components/ErrorMessage";
 import Layout from "../components/Layout";
 import PasswordInput from "../components/PasswordInput";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { authBootstrapEpochAtom, currentUserAtom } from "../store/auth";
 
 /**
  * ログイン（POST /login）。成功時に currentUserAtom を更新し、プロフィールへ navigate。
  */
 export default function LoginPage() {
+  useDocumentTitle("ログイン");
   const setCurrentUser = useSetAtom(currentUserAtom);
   const bumpAuthEpoch = useSetAtom(authBootstrapEpochAtom);
   const navigate = useNavigate();

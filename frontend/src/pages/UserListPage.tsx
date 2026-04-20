@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Pagination from '../components/Pagination';
 import UserCard from '../components/UserCard';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useUserList } from '../hooks/useUserList';
 import { currentUserAtom } from '../store/auth';
 import { updateIfDefined } from '../utils/updateIfDefined';
@@ -13,6 +14,7 @@ import { updateIfDefined } from '../utils/updateIfDefined';
  * ユーザー一覧・検索（ProtectedRoute）。inputQuery と query を分け、検索実行時に page を 1 に戻す。
  */
 export default function UserListPage() {
+  useDocumentTitle('ユーザー一覧');
   const [currentUser] = useAtom(currentUserAtom);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');

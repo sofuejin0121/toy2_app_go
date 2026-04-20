@@ -6,6 +6,7 @@ import { getErrorList } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import PasswordInput from '../components/PasswordInput';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
 
 /**
@@ -13,6 +14,7 @@ import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
  * 成功時はログイン済みとして currentUserAtom を更新しプロフィールへ。
  */
 export default function PasswordResetEditPage() {
+  useDocumentTitle('パスワード再設定');
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';

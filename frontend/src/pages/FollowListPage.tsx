@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import Pagination from '../components/Pagination';
 import UserCard from '../components/UserCard';
 import UserStatBar from '../components/UserStatBar';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useFollowList } from '../hooks/useFollowList';
 
 /**
@@ -21,6 +22,12 @@ export default function FollowListPage({ mode }: Props) {
   const [page, setPage] = useState(1);
 
   const { users, statSummary, pagination, loading, error } = useFollowList(id, mode, page);
+
+  const listLabel = mode === 'following' ? 'フォロー中' : 'フォロワー';
+  const docTitle = statSummary?.user
+    ? `${statSummary.user.name}の${listLabel}`
+    : listLabel;
+  useDocumentTitle(docTitle);
 
   return (
     <Layout>

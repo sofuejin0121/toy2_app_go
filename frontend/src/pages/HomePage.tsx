@@ -8,6 +8,7 @@ import MicropostCard from '../components/MicropostCard';
 import MicropostForm from '../components/MicropostForm';
 import Pagination from '../components/Pagination';
 import UserStatBar from '../components/UserStatBar';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useFeed } from '../hooks/useFeed';
 import { currentUserAtom } from '../store/auth';
 import type { Micropost, Pagination as PaginationMeta } from '../types';
@@ -78,6 +79,8 @@ export default function HomePage() {
     currentUser,
     page,
   );
+
+  useDocumentTitle(currentUser ? 'ホーム' : null);
 
   if (currentUser === undefined) {
     return (

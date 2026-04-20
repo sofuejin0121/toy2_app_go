@@ -5,6 +5,7 @@ import { signUp } from '../api/client';
 import { getErrorList } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type SignupFieldName = 'name' | 'email' | 'password' | 'password_confirmation';
 
@@ -20,6 +21,7 @@ const SIGNUP_FIELDS: { name: SignupFieldName; label: string; type: string }[] = 
  * SIGNUP_FIELDS で name の型を固定し、フォーム値へのアクセスで as を不要にしている。
  */
 export default function SignupPage() {
+  useDocumentTitle('アカウント登録');
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: '',

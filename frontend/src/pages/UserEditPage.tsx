@@ -8,6 +8,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PasswordInput from '../components/PasswordInput';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { currentUserAtom } from '../store/auth';
 
 /**
@@ -37,6 +38,10 @@ export default function UserEditPage() {
   const { data, isLoading: pageLoading } = useSWR(
     id ? `user-edit-${id}` : null,
     () => getUser(Number(id), 1),
+  );
+
+  useDocumentTitle(
+    data?.user ? `${data.user.name} · プロフィール編集` : 'プロフィール編集',
   );
 
   useEffect(() => {

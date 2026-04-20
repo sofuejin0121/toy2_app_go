@@ -5,12 +5,14 @@ import { activateAccount } from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import ErrorMessage from '../components/ErrorMessage';
 import Layout from '../components/Layout';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { authBootstrapEpochAtom, currentUserAtom } from '../store/auth';
 
 /**
  * メール内リンクからのアカウント有効化（GET + token/email）。成功時に atom を更新しプロフィールへ遷移。
  */
 export default function AccountActivationPage() {
+  useDocumentTitle('アカウント有効化');
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
