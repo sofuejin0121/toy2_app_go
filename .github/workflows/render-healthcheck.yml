@@ -7,6 +7,8 @@
 #   値:   https://<あなたのサービス名>.onrender.com/api/health
 #
 # 手動で一度試す: Actions タブ → 「Render healthcheck」→ Run workflow
+#
+# 注意: schedule はデフォルトブランチ上のこのファイルが対象。fork では Secrets が無いと失敗する。
 
 name: Render healthcheck
 
@@ -15,6 +17,9 @@ on:
     # UTC。10 分毎（Render のアイドル時間より短い間隔が無難）
     - cron: "*/10 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   ping:
@@ -27,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${HEALTHCHECK_URL:-}" ]; then
-            echo "::error::Repository secret RENDER_HEALTHCHECK_URL が未設定です。README のワークフロー先頭コメントを参照してください。"
+            echo "::error::Repository secret RENDER_HEALTHCHECK_URL が未設定です。README の「Render のスリープ対策」を参照してください。"
             exit 1
           fi
-          curl -fsS --max-time 60 "$HEALTHCHECK_URL"
+          curl -fsS --max-time 60 -o /dev/null -w "HTTP %{http_code}\n" "$HEALTHCHECK_URL"
