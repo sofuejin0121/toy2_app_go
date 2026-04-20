@@ -6,7 +6,7 @@
  * - 未ログインなら null を返して何も出さない（ホームのゲスト表示では非表示）。
  */
 import { useAtom } from 'jotai';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createMicropost } from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import ErrorMessage from './ErrorMessage';
@@ -29,10 +29,26 @@ export default function MicropostForm({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   // type="file" は React state で中身をリセットしづらいので、送信成功後に DOM の value を空にして同じファイルを選べるようにする。
   const fileRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
   if (!currentUser) return null;
+
+  const clearImage = () => {
+    setImageFile(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +84,30 @@ export default function MicropostForm({
             rows={3}
             className="w-full resize-none border-0 outline-none text-gray-900 placeholder-gray-400 text-sm"
           />
+          {imagePreviewUrl && imageFile && (
+            <div className="relative mt-3 inline-block max-w-full">
+              <img
+                src={imagePreviewUrl}
+                alt={imageFile.name}
+                className="max-h-48 max-w-full rounded-lg border border-gray-200 object-contain"
+              />
+              <button
+                type="button"
+                onClick={clearImage}
+                className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+                aria-label="画像を外す"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
           {error && <ErrorMessage message={error} variant="inline" />}
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
@@ -89,7 +129,9 @@ export default function MicropostForm({
                 />
               </label>
               {imageFile && (
-                <span className="text-xs text-gray-500 truncate max-w-24">{imageFile.name}</span>
+                <span className="text-xs text-gray-500 truncate max-w-[10rem]" title={imageFile.name}>
+                  {imageFile.name}
+                </span>
               )}
             </div>
             <div className="flex items-center gap-3">
