@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/Chirp/internal/model"
 )
 
 type MicropostPageData struct {

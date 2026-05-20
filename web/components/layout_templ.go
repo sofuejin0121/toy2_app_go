@@ -9,7 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/Chirp/internal/model"
 )
 
 // FullTitle はページタイトルを整形します。

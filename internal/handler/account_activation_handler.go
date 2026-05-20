@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/sofuejin0121/toy_app_go/internal/store"
+	"github.com/sofuejin0121/Chirp/internal/store"
 )
 
 // AccountActivationHandler はアカウント有効化を処理するハンドラー

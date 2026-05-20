@@ -2,12 +2,12 @@ package handler
 
 import (
 	"net/http"
-	"github.com/sofuejin0121/toy_app_go/internal/store"
-	"github.com/sofuejin0121/toy_app_go/web/components"
+	"github.com/sofuejin0121/Chirp/internal/store"
+	"github.com/sofuejin0121/Chirp/web/components"
 
 	"fmt"
 	"os"
-	"github.com/sofuejin0121/toy_app_go/internal/middleware"
+	"github.com/sofuejin0121/Chirp/internal/middleware"
 
 )
 

@@ -3,7 +3,7 @@ package store
 import (
 	"database/sql"
 
-	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/Chirp/internal/model"
 )
 
 // NotificationItem は通知1件 + 関連データをまとめた構造体

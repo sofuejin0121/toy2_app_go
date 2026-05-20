@@ -1,6 +1,6 @@
 package mailer
 
-import "github.com/sofuejin0121/toy_app_go/internal/model"
+import "github.com/sofuejin0121/Chirp/internal/model"
 
 // Mailer はメール送信のインターフェイス
 type Mailer interface {

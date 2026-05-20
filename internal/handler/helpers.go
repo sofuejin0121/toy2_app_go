@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/sofuejin0121/toy_app_go/internal/middleware"
-	"github.com/sofuejin0121/toy_app_go/internal/model"
-	"github.com/sofuejin0121/toy_app_go/web/components"
+	"github.com/sofuejin0121/Chirp/internal/middleware"
+	"github.com/sofuejin0121/Chirp/internal/model"
+	"github.com/sofuejin0121/Chirp/web/components"
 )
 
 // getFlash はリクエストコンテキストからフラッシュメッセージを取得する

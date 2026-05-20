@@ -13,8 +13,8 @@ import (
 	"net/url"
 	texttemplate "text/template"
 
-	"github.com/sofuejin0121/toy_app_go/internal/mailer/components"
-	"github.com/sofuejin0121/toy_app_go/internal/model"
+	"github.com/sofuejin0121/Chirp/internal/mailer/components"
+	"github.com/sofuejin0121/Chirp/internal/model"
 )
 
 //go:embed templates/*.txt

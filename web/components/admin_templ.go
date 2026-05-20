@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 
-	"github.com/sofuejin0121/toy_app_go/internal/model"
-	"github.com/sofuejin0121/toy_app_go/internal/store"
+	"github.com/sofuejin0121/Chirp/internal/model"
+	"github.com/sofuejin0121/Chirp/internal/store"
 )
 
 // データ構造体

@@ -8,7 +8,7 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/sofuejin0121/toy_app_go/internal/model"
+import "github.com/sofuejin0121/Chirp/internal/model"
 
 // SessionPageData はセッション関連ページのデータを保持
 type SessionPageData struct {

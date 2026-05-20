@@ -35,4 +35,4 @@ jobs:
             echo "::error::Repository secret RENDER_HEALTHCHECK_URL が未設定です。README の「Render のスリープ対策」を参照してください。"
             exit 1
           fi
-          curl -fsS --max-time 60 -o /dev/null -w "HTTP %{http_code}\n" "$HEALTHCHECK_URL"
+          curl -fsS --max-time 120 --retry 2 --retry-delay 10 -o /dev/null -w "HTTP %{http_code}\n" "$HEALTHCHECK_URL"

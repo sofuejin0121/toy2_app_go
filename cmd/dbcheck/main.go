@@ -4,7 +4,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/sofuejin0121/toy_app_go/internal/store"
+    "github.com/sofuejin0121/Chirp/internal/store"
 )
 
 func main() {
